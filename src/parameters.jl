@@ -1,15 +1,16 @@
 #=
+parameters.jl
     Input parameters are non-dimensional numbers, here any dependent parameters are derived
     Ro=1: Rossby number
-    Fr₀=1: Deep Froude number
-    Frb=10: Boundary layer Froude number
+    Fr₀=0.017: Deep Froude number
+    Frb=0.1: Boundary layer Froude number
     Ek=nothing: (Turbulent) Ekman number, for closure. If nothing then a 
     Pr=1: Prandtl number for buoyancy diffusion
     α=0.1: Boundary layer aspect ratio
     λ=0.05: Fractional width of transition to deep water
     δ=-0.25: Fractional height change of transition to deep water across filament
 =#
-default_inputs = (; Ro=1, Fr₀=1, Frb=10, Ek=nothing, Pr=1, α=0.1, λ=0.05, δ=-1/4)
+default_inputs = (; Ro=1, Fr₀=0.017, Frb=0.1, Ek=nothing, Pr=1, α=0.1, λ=0.05, δ=-1/4)
 
 function create_simulation_parameters(input_parameters; verbose=true)
     ip = (; default_inputs..., input_parameters...)
@@ -41,7 +42,7 @@ function create_simulation_parameters(input_parameters; verbose=true)
         Lz = 2.5H
         verbose && @info "Created simulation parameters\
             \nInput:\n Ro=$Ro\n Fr₀=$Fr₀\n Frb=$Frb\n Ek=$Ek\n α=$α\n λ=$λ\n δ=$δ\
-        \nOutput:\n L=$L\n f=$f\n H=$H\n δH=$δH\n ζ=$ζ\n N₀=$N₀\n Nb=$Nb\n ℓ=$ℓ\n ν=$ν"
-        (; Ro, Fr₀, Frb, Ek, α, λ, δ, L, f, H, δH, ζ, N₀, Nb, ℓ, ν)
+        \nOutput:\n L=$L\n f=$f\n H=$H\n δH=$δH\n ζ=$ζ\n N₀=$N₀\n Nb=$Nb\n ℓ=$ℓ\n ν=$ν\n Lz=$Lz"
+        (; Ro, Fr₀, Frb, Ek, α, λ, δ, L, f, H, δH, ζ, N₀, Nb, ℓ, ν, Lz)
     end
 end

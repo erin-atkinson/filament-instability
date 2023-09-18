@@ -1,4 +1,5 @@
 #=
+filament_state.jl
     Functions that define the nominal buoyancy state and associated thermal wind
 =#
 
@@ -23,7 +24,8 @@ function get_filament_state(simulation_parameters; verbose=true)
         v(x, z) =  -(λ / f) * filament_∂xh(x) * (Nb^2 - N₀^2) * g((z - filament_h(x)) / λ)
         if verbose
             ζ_max = ζ_bar(simulation_parameters; v)
-            @info "Filament state created: Ro=$(ζ_max/f), Fr₀=$(ζ_max/N₀), Frb=$(ζ_max/Nb)"
+            ζ_min = ζ_bar(simulation_parameters; (x, z)->-v(x, z))
+            @info "Filament state created: Ro=$(ζ_max/f), Ro_min=$(ζ_min/f), Fr₀=$(ζ_max/N₀), Frb=$(ζ_max/Nb)"
         end
         (; b, v)
     end
