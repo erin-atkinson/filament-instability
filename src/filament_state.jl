@@ -15,17 +15,23 @@
 
 # You'd want this to be a macro if these functions weren't just used for setup
 function get_filament_state(simulation_parameters; verbose=true)
-    filament_h(x) = δH * (h((x + L/2)/ℓ) - h((x - L/2)/ℓ)) - H
-    filament_∂xh(x) = δH * (∂xh((x + L/2)/ℓ) - ∂xh((x - L/2)/ℓ)) / ℓ
-    b(x, z) = N₀^2 * z + λ * (Nb^2 - N₀^2) * g((z - filament_h(x)) / λ)
-    v(x, z) =  -(λ / f) * filament_∂xh(x) * (Nb^2 - N₀^2) * g((z - filament_h(x)) / λ)
-    
+    sp = simulation_parameters
+    let δH=sp.δH, L=sp.L, ℓ=sp.ℓ, H=sp.H, N₀=sp.N₀, Nb=sp.Nb, λ=sp.λ, f=sp.f
+        filament_h(x) = δH * (h((x + L/2)/ℓ) - h((x - L/2)/ℓ)) - H
+        filament_∂xh(x) = δH * (∂xh((x + L/2)/ℓ) - ∂xh((x - L/2)/ℓ)) / ℓ
+        b(x, z) = N₀^2 * z + λ * (Nb^2 - N₀^2) * g((z - filament_h(x)) / λ)
+        v(x, z) =  -(λ / f) * filament_∂xh(x) * (Nb^2 - N₀^2) * g((z - filament_h(x)) / λ)
+        if verbose
+            ζ_max = ζ_bar(simulation_parameters; v)
+            @info "Filament state created: Ro=$(ζ_max/f), Fr₀=$(ζ_max/N₀), Frb=$(ζ_max/Nb)"
+        end
+        (; b, v)
+    end
 end
 
-function Ro(simulation_paramters; v)
+function ζ_bar(simulation_parameters; v)
     # Maximum vertical vorticity
-end
-
-function Fr₀(simulation_paramters; v)
-    # Maximum vertical vorticity
+    @inline ζ(x) = ( v(x+5e-4, 0) - v(x-5e-4, 0) ) / 1e-3
+    xs = range(-simulation_parameters.L, simulation_parameters.L, 1000)
+    return maximum(ζ.(xs))
 end
