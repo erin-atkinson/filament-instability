@@ -5,8 +5,6 @@ boundary_conditions.jl
 
 using Oceananigans
 
-FieldBoundaryConditions(top = GradientBoundaryCondition((x, y, t)->(v_front(x, 0) - v_front(x, -0.001))/0.002))
-
 @inline function get_boundary_conditions(simulation_parameters)
     (b, v) = get_filament_state(simulation_parameters; verbose=false)
     b_bcs = FieldBoundaryConditions(top = GradientBoundaryCondition(simulation_parameters.Nb/10))
