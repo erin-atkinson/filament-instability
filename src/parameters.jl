@@ -12,7 +12,7 @@ parameters.jl
 =#
 default_inputs = (; Ro=1, Fr₀=0.017, Frb=0.1, Ek=nothing, Pr=1, α=0.1, λ=0.05, δ=-1/4)
 
-function create_simulation_parameters(input_parameters; verbose=true)
+@inline function create_simulation_parameters(input_parameters; verbose=true)
     ip = (; default_inputs..., input_parameters...)
     let Ro=ip.Ro, Fr₀=ip.Fr₀, Frb=ip.Frb, Ek=ip.Ek, Pr=ip.Pr, α=ip.α, λ=ip.λ, δ=ip.δ
         # Impose length and frequency scales

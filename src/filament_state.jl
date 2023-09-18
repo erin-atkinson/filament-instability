@@ -15,7 +15,7 @@ filament_state.jl
 @inline ∂xh(x) = exp(-x^2) / sqrt(π)
 
 # You'd want this to be a macro if these functions weren't just used for setup
-function get_filament_state(simulation_parameters; verbose=true)
+@inline function get_filament_state(simulation_parameters; verbose=true)
     sp = simulation_parameters
     let δH=sp.δH, L=sp.L, ℓ=sp.ℓ, H=sp.H, N₀=sp.N₀, Nb=sp.Nb, λ=sp.λ, f=sp.f
         filament_h(x) = δH * (h((x + L/2)/ℓ) - h((x - L/2)/ℓ)) - H
@@ -31,7 +31,7 @@ function get_filament_state(simulation_parameters; verbose=true)
     end
 end
 
-function ζ_bar(simulation_parameters; v)
+@inline function ζ_bar(simulation_parameters; v)
     # Maximum vertical vorticity
     @inline ζ(x) = ( v(x+5e-4, 0) - v(x-5e-4, 0) ) / 1e-3
     xs = range(-simulation_parameters.L, simulation_parameters.L, 1000)
