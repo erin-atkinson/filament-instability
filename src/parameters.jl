@@ -13,7 +13,7 @@ default_inputs = (; Ro=1, Fr₀=1, Frb=10, Ek=nothing, Pr=1, α=0.1, λ=0.05, δ
 
 function create_simulation_parameters(input_parameters; verbose=true)
     ip = (; default_inputs..., input_parameters...)
-    simulation_parameters = let Ro=ip.Ro, Fr₀=ip.Fr₀, Frb=ip.Frb, Ek=ip.Ek, Pr=ip.Pr, α=ip.α, λ=ip.λ, δ=ip.δ
+    let Ro=ip.Ro, Fr₀=ip.Fr₀, Frb=ip.Frb, Ek=ip.Ek, Pr=ip.Pr, α=ip.α, λ=ip.λ, δ=ip.δ
         # Impose length and frequency scales
         # Distance between fronts
         L = 1
@@ -42,6 +42,6 @@ function create_simulation_parameters(input_parameters; verbose=true)
         verbose && @info "Created simulation parameters\
             \nInput:\n Ro=$Ro\n Fr₀=$Fr₀\n Frb=$Frb\n Ek=$Ek\n α=$α\n λ=$λ\n δ=$δ\
         \nOutput:\n L=$L\n f=$f\n H=$H\n δH=$δH\n ζ=$ζ\n N₀=$N₀\n Nb=$Nb\n ℓ=$ℓ\n ν=$ν"
-        simulation_parameters = (; Ro, Fr₀, Frb, Ek, α, λ, δ, L, f, H, δH, ζ, N₀, Nb, ℓ, ν)
+        (; Ro, Fr₀, Frb, Ek, α, λ, δ, L, f, H, δH, ζ, N₀, Nb, ℓ, ν)
     end
 end
