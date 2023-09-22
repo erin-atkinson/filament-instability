@@ -1,48 +1,55 @@
 #=
 parameters.jl
     Input parameters are non-dimensional numbers, here any dependent parameters are derived
-    Ro=1: Rossby number
-    Fr₀=0.017: Deep Froude number
-    Frb=0.1: Boundary layer Froude number
-    Ek=nothing: (Turbulent) Ekman number, for closure. If nothing then a 
+    Ro=1: Maximum magnitude of Rossby number
+    Ri=0.6: Minimum Richardson number
+    Ek=nothing: (Turbulent) Ekman number, for closure. If nothing then a Smagorinsky-Lilly default is used
     Pr=1: Prandtl number for buoyancy diffusion
-    α=0.1: Boundary layer aspect ratio
+    α=0.25: Front width - separation ratio
     λ=0.05: Fractional width of transition to deep water
     δ=-0.25: Fractional height change of transition to deep water across filament
-=#
-default_inputs = (; Ro=1, Fr₀=0.017, Frb=0.1, Ek=nothing, Pr=1, α=0.1, λ=0.05, δ=-1/4)
 
-@inline function create_simulation_parameters(input_parameters; verbose=true)
+    λ ≪ δ ≪ 1 is required for the correct computation of parameters. (factors of two is enough)
+=#
+using SpecialFunctions
+# Filament shape function
+γ(s, δ, α) = -1 + (δ / 2) * (erf(s + 1/(2α)) - erf(s - 1/(2α)))
+# Function to maximise for Ro
+square_curvature(x, δ, α) = 2*abs((γ(x, δ, α)^2 - (γ(x+1e-5, δ, α)^2 + γ(x-1e-5, δ, α)^2) / 2) / 1e-10)
+
+default_inputs = (; Ro=1, Ri=0.6, Frb=0.1, Ek=nothing, Pr=1, α=1/4, λ=0.05, δ=-1/4)
+
+@inline function create_simulation_parameters(input_parameters=(; ); verbose=true)
     ip = (; default_inputs..., input_parameters...)
-    let Ro=ip.Ro, Fr₀=ip.Fr₀, Frb=ip.Frb, Ek=ip.Ek, Pr=ip.Pr, α=ip.α, λ=ip.λ, δ=ip.δ
-        # Impose length and frequency scales
+    let Ro=ip.Ro, Ri=ip.Ri, Ek=ip.Ek, Pr=ip.Pr, α=ip.α, λ=ip.λ, δ=ip.δ
+        # Setting variables
         # Distance between fronts
         L = 1
+        # Height of the boundary layer
+        H = 0.1
         # Coriolis parameter
         f=1
-        
-        # Derived values
-        # Height of the boundary layer
-        H = α * L
+
+        # Derived variables
+        # Front width
+        ℓ = α * L
         # Front height
         δH = δ * H
-        # Vorticity scale
-        ζ = Ro * f
-        # Buoyancy frequencies
-        N₀ = ζ / Fr₀
-        Nb = ζ / Frb
-        # Front width is then imposed by desired Rossby number
-        # this value is an estimate, valid for small δ, α, do a better deriv
-        ℓ = sqrt(0.560 * H * abs(δH) * abs(N₀^2 - Nb^2) / (f^2 * Ro))
+        # Difference in stratification
+        ΔN² = - (2Ro * f^2 * ℓ^2) / (H^2 * maximum([square_curvature(x, δ, α) for x in range(-3L, 3L, 1000)])) 
+        # Boundary layer stratification
+        Nb² = (Ri * ΔN²^2 * H^2 * δ^2) / (f^2 * ℓ^2 * π * (1-exp(-1/α^2)))
         # Turbulent viscosity scale
         ν = Ek == nothing ? nothing : Ek * f * H^2
+        Nb = sqrt(Nb²)
+        N₀ = sqrt(Nb² - ΔN²)
         # These aren't physical parameters but will be necessary for later
         # Defined here to avoid hard-coding elsewhere...
         # Simulation vertical extent
         Lz = 2.5H
         verbose && @info "Created simulation parameters\
-            \nInput:\n Ro=$Ro\n Fr₀=$Fr₀\n Frb=$Frb\n Ek=$Ek\n α=$α\n λ=$λ\n δ=$δ\
-        \nOutput:\n L=$L\n f=$f\n H=$H\n δH=$δH\n ζ=$ζ\n N₀=$N₀\n Nb=$Nb\n ℓ=$ℓ\n ν=$ν\n Lz=$Lz"
-        (; Ro, Fr₀, Frb, Ek, α, λ, δ, L, f, H, δH, ζ, N₀, Nb, ℓ, ν, Lz)
+            \nInput:\n Ro=$Ro\n Ri=$Ri\n Ek=$Ek\n α=$α\n λ=$λ\n δ=$δ\
+        \nOutput:\n L=$L\n f=$f\n H=$H\n δH=$δH\n N₀=$N₀\n Nb=$Nb\n ℓ=$ℓ\n ν=$ν\n Lz=$Lz"
+        (; Ro, Ri, Ek, α, λ, δ, L, f, H, δH, N₀, Nb, ℓ, ν, Lz)
     end
 end
