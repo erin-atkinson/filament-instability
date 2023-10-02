@@ -40,7 +40,7 @@ default_inputs = (; Ro=1, Ri=0.6, Frb=0.1, Ek=nothing, Pr=1, α=1/4, λ=0.05, δ
         # Boundary layer stratification
         Nb² = (Ri * ΔN²^2 * H^2 * δ^2) / (f^2 * ℓ^2 * π * (1-exp(-1/α^2)))
         # Turbulent viscosity scale
-        ν = Ek == nothing ? nothing : Ek * f * H^2
+        ν = Ek == nothing ? nothing : (Ek * f * H^2)
         Nb = sqrt(Nb²)
         N₀ = sqrt(Nb² - ΔN²)
         # These aren't physical parameters but will be necessary for later

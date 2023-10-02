@@ -5,7 +5,7 @@ default/outputs.jl
 using Oceananigans
 
 # This macro should define and create output writers for any desired saved fields
-macro additional_outputs(model, foldername)
+macro additional_outputs!(simulation)
     return quote
         nothing
     end

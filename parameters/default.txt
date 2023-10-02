@@ -5,22 +5,24 @@
 # Lines starting with # are ignored
 # SIMULATION PARAMS
 # Size
-Nx = 1024
-Ny = 64
-Nz = 128
+Nx=1024
+Ny=64
+Nz=64
+# Step frequency
+Np=100
 # Sponge layer fractional height
-σ=0.2
+σ=0.4
+c=2
 # Physical parameters
 # Maximum Rossby number
-Ro=1
+Ro=3
+# Ekman number (do not include for none)
 # Minimum Richardson number
-Ri=0.6
-# Ekman number
-Ek=nothing
+Ri=0.25
 # Prandtl number
 Pr=1
 # Front width / separation
-α=0.25
+α=1
 # Thermocline width / boundary layer height
 λ=0.05
 # Thermocline height change / boundary layer height
