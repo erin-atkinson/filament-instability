@@ -6,8 +6,8 @@
 # SIMULATION PARAMS
 # Size
 Nx=1024
-Ny=1024
-Nz=64
+Ny=512
+Nz=128
 # Step frequency
 Np=100
 # Sponge layer fractional height

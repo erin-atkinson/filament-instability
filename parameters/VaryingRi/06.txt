@@ -6,8 +6,8 @@
 # SIMULATION PARAMS
 # Size
 Nx=1024
-Ny=1024
-Nz=64
+Ny=512
+Nz=128
 # Step frequency
 Np=100
 # Sponge layer fractional height
@@ -18,7 +18,7 @@ c=2
 Ro=3
 # Ekman number (do not include for none)
 # Minimum Richardson number
-Ri=0.25
+Ri=0.6
 # Prandtl number
 Pr=1
 # Front width / separation
