@@ -80,9 +80,9 @@ model = NonhydrostaticModel(;
 @info "Setting model state"
 # set initial conditions as the conditions far from the filament
 # and a random secondary circulation in the top of boundary layer
-u₀(x, y, z) = 1e-8*randn() * (tanh((z + sp.H/2) / (sp.λ * sp.H)) + 1)
-v₀(x, y, z) = v_filament(100sp.L, z) + 1e-8*randn() * (tanh((z + sp.H/2) / (sp.λ * sp.H)) + 1)
-w₀(x, y, z) = 1e-8*randn() * (tanh((z + sp.H/2) / (sp.λ * sp.H)) + 1)
+u₀(x, y, z) = 1e-10*randn() * (tanh((z + sp.H) / (sp.λ * sp.H)) + 1)
+v₀(x, y, z) = v_filament(100sp.L, z) + 1e-10*randn() * (tanh((z + sp.H) / (sp.λ * sp.H)) + 1)
+w₀(x, y, z) = 1e-10*randn() * (tanh((z + sp.H) / (sp.λ * sp.H)) + 1)
 b₀(x, y, z) = b_filament(100sp.L, z)
 
 set!(model; u=u₀, v=v₀, w=w₀, b=b₀, additional_tracer_initial_conditions(sp, mp)...)
