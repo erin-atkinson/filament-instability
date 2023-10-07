@@ -26,15 +26,27 @@ g(s) = (s + log(2*cosh(s)))/2
         if verbose
             ζ_max = ζ_bar(simulation_parameters; v)
             ζ_min = ζ_bar(simulation_parameters; v=(x, z)->-v(x, z))
-            @info "Filament state created: Ro=$(ζ_max/f), Ro_min=$(ζ_min/f), Fr₀=$(ζ_max/N₀), Frb=$(ζ_max/Nb)"
+            @info "Filament state created: Ro=$(ζ_max/f), Ro_min=$(ζ_min/f), Fr₀=$(ζ_max/N₀), Frb=$(ζ_max/Nb), Ri_min=$(Ri_min(simulation_parameters; v, b))"
         end
         (; b, v)
     end
 end
+
+
 
 @inline function ζ_bar(simulation_parameters; v)
     # Maximum vertical vorticity
     @inline ζ(x) = ( v(x+5e-4, 0) - v(x-5e-4, 0) ) / 1e-3
     xs = range(-simulation_parameters.L, simulation_parameters.L, 1000)
     return maximum(ζ.(xs))
+end
+
+@inline function Ri_min(simulation_parameters; v, b)
+    # The minimum Richardson number
+    xs = range(-simulation_parameters.L, simulation_parameters.L, 100)
+    zs = range(-simulation_parameters.H, 0, 100)
+    @inline ∂v∂z(x, z) =  (v(x, z+5e-4) - v(x, z-5e-4)) / 1e-3
+    @inline ∂b∂z(x, z) =  (b(x, z+5e-4) - b(x, z-5e-4)) / 1e-3
+    @inline Ri(x, z) = abs(∂b∂z(x, z)) / ∂v∂z(x, z)^2
+    return minimum([Ri(x, z) for x in xs, z in zs])
 end

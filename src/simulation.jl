@@ -115,10 +115,10 @@ mkdir(output_folder)
 @info "Creating output writers at $output_folder"
 
 # Mean fields
-u_dfm = Average(u; dims=2)
-v_dfm = Average(v; dims=2)
-w_dfm = Average(w; dims=2)
-b_dfm = Average(b; dims=2)
+u_dfm = Field(Average(u; dims=2))
+v_dfm = Field(Average(v; dims=2))
+w_dfm = Field(Average(w; dims=2))
+b_dfm = Field(Average(b; dims=2))
 
 simulation.output_writers[:mean_state] = JLD2OutputWriter(
     model,
@@ -128,21 +128,6 @@ simulation.output_writers[:mean_state] = JLD2OutputWriter(
     overwrite_existing = true
 )
 
-# Also save deviations
-u_sq = Average(u * u; dims=2)
-v_sq = Average(v * v; dims=2)
-w_sq = Average(w * w; dims=2)
-b_sq = Average(b * b; dims=2)
-
-simulation.output_writers[:sq_state] = JLD2OutputWriter(
-    model,
-    (; u_sq, v_sq, w_sq, b_sq),
-    filename = "$output_folder/down_front_mean_square.jld2",
-    schedule = TimeInterval(1/(sp.f*write_freq)),
-    overwrite_existing = true
-)
-
-@info simulation
 # Save parameters to a file
 jldopen("$output_folder/parameters.jld2", "a") do file
     file["parameters/simulation"] = sp
@@ -150,7 +135,7 @@ end
 
 # Insert additional output code
 @additional_outputs! simulation
-
+@info simulation
 # run the simulation for initialisation phase
 @info "Initialising boundary layer turbulence"
 run!(simulation)
