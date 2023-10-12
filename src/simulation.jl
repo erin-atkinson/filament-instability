@@ -131,6 +131,8 @@ simulation.output_writers[:mean_state] = JLD2OutputWriter(
 # Save parameters to a file
 jldopen("$output_folder/parameters.jld2", "a") do file
     file["parameters/simulation"] = sp
+    file["parameters/init_time"] = init_time
+    file["parameters/run_time"] = run_time
 end
 
 # Insert additional output code
