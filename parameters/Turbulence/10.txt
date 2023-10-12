@@ -1,0 +1,34 @@
+# Parameters for front simulation
+# Each line is a key, value pair
+# Newline between parameters for simulation setup and parameters
+# for front setup (in case we want to use a different front)
+# Lines starting with # are ignored
+# SIMULATION PARAMS
+# Size
+Nx=128
+Ny=128
+Nz=128
+# Step frequency
+Np=100
+# Sponge layer fractional height
+σ=0.4
+c=2
+# Physical parameters
+# Maximum Rossby number
+Ro=3
+# Ekman number (do not include for none)
+# Minimum Richardson number
+Ri=0.6
+# Prandtl number
+Pr=1
+# Front width / separation
+α=1
+# Thermocline width / boundary layer height
+λ=0.05
+# Thermocline height change / boundary layer height
+δ=-0.25
+# Cooling strength as a fraction of the top stratification
+cool=10
+
+# Mode parameters
+default=nothing
