@@ -19,11 +19,11 @@ square_curvature(x, δ, α) = 2*abs((γ(x, δ, α)^2 - (γ(x+1e-5, δ, α)^2 + �
 # Function to maximise for Ri
 grad_squared(x, δ, α) = ((γ(x+1e-5, δ, α) - γ(x-1e-5, δ, α)) / (2e-5))^2
 
-default_inputs = (; Ro=1, Ri=0.6, Frb=0.1, Ek=nothing, Pr=1, α=1/4, λ=0.05, δ=-1/4, β=0.1)
+default_inputs = (; Ro=1, Ri=0.6, Frb=0.1, Ek=nothing, Pr=1, α=1/4, λ=0.05, δ=-1/4, β=0.1, cool=0.01)
 
 @inline function create_simulation_parameters(input_parameters=(; ); verbose=true)
     ip = (; default_inputs..., input_parameters...)
-    let Ro=ip.Ro, Ri=ip.Ri, Ek=ip.Ek, Pr=ip.Pr, α=ip.α, λ=ip.λ, δ=ip.δ, β=ip.β
+    let Ro=ip.Ro, Ri=ip.Ri, Ek=ip.Ek, Pr=ip.Pr, α=ip.α, λ=ip.λ, δ=ip.δ, β=ip.β, cool=ip.cool
         # Setting variables
         # Distance between fronts
         L = 1
@@ -52,7 +52,7 @@ default_inputs = (; Ro=1, Ri=0.6, Frb=0.1, Ek=nothing, Pr=1, α=1/4, λ=0.05, δ
         verbose && @info "Created simulation parameters\
             \nInput:\n Ro=$Ro\n Ri=$Ri\n Ek=$Ek\n α=$α\n λ=$λ\n δ=$δ\
         \nOutput:\n L=$L\n f=$f\n H=$H\n δH=$δH\n N₀=$N₀\n Nb=$Nb\n ℓ=$ℓ\n ν=$ν\n Lz=$Lz"
-        (; Ro, Ri, Ek, α, λ, δ, L, f, H, δH, N₀, Nb, ℓ, ν, Lz, β)
+        (; Ro, Ri, Ek, α, λ, δ, L, f, H, δH, N₀, Nb, ℓ, ν, Lz, β, cool)
     end
 end
 

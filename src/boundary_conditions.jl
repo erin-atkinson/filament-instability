@@ -9,7 +9,7 @@ using Oceananigans
     (b, v) = get_filament_state(simulation_parameters; verbose=false)
     v_grad(x) = (v(x, 1e-4) - v(x, -1e-4)) / 2e-4
     v_bc_func(x, y, t, p) = t >= p.init_time ? p.v_grad(x) : 0
-    b_bcs = FieldBoundaryConditions(top = GradientBoundaryCondition(-simulation_parameters.Nb/20))
+    b_bcs = FieldBoundaryConditions(top = GradientBoundaryCondition(-simulation_parameters.cool * simulation_parameters.Nb^2))
     v_bcs = FieldBoundaryConditions(
         top = GradientBoundaryCondition(v_bc_func, parameters=(; init_time, v_grad))
     )
