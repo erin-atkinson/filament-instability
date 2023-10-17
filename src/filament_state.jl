@@ -37,7 +37,7 @@ end
 @inline function ζ_bar(simulation_parameters; v)
     # Maximum vertical vorticity
     @inline ζ(x) = ( v(x+5e-4, 0) - v(x-5e-4, 0) ) / 1e-3
-    xs = range(-simulation_parameters.L, simulation_parameters.L, 1000)
+    xs = range(-5simulation_parameters.L, 5simulation_parameters.L, 10000)
     return maximum(ζ.(xs))
 end
 

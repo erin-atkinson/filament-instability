@@ -37,7 +37,8 @@ include("$mode_folder/tracers.jl")
 sp = (; simulation_parameters..., create_simulation_parameters(simulation_parameters)...)
 @info sp
 (b_filament, v_filament) = get_filament_state(sp)
-
+# Get a filament state without stratification
+(b_init, v_init) = get_filament_state((; sp..., Nb=sp.Nb))
 # To ensure that the grids are isotropic in horizontal,
 horizontal_aspect_ratio = sp.Ny / sp.Nx
 
@@ -57,12 +58,7 @@ forcing = (; get_sponge_layer_forcing(sp; σ=sp.σ, c=sp.c)..., additional_trace
 @info tracers
 
 # Turbulence closure
-closure = if sp.ν == nothing
-    Oceananigans.TurbulenceClosures.SmagorinskyLilly(Pr=sp.Pr)
-else
-    # This actually doesn't really work due to the changing grid size, will probably replace
-    Oceananigans.TurbulenceClosures.ScalarDiffusivity(ν=sp.ν, κ=sp.ν / sp.Pr)
-end
+closure = Oceananigans.TurbulenceClosures.SmagorinskyLilly(Pr=sp.Pr)
 
 @info "Creating model"
 model = NonhydrostaticModel(;
@@ -79,12 +75,15 @@ model = NonhydrostaticModel(;
 
 @info "Setting model state"
 # set initial conditions as the conditions far from the filament
-# and a random vertical velocity at the surface
-u₀(x, y, z) = 0 #1e-2*randn() * (tanh((z + sp.H) / (sp.λ * sp.H)) + 1)
-v₀(x, y, z) = v_filament(100sp.L, z) #+ 1e-2*randn() * (tanh((z + sp.H) / (sp.λ * sp.H)) + 1)
-w₀(x, y, z) = 1e-4*randn() * (tanh(z / (sp.λ * sp.H)) + 1)
-b₀(x, y, z) = b_filament(100sp.L, z)
+# and a random vertical velocity in the boundary layer
 
+u₀(x, y, z) = 0 #1e-2*randn() * (tanh((z + sp.H) / (sp.λ * sp.H)) + 1)
+v₀(x, y, z) = v_init(100sp.L, z) #+ 1e-2*randn() * (tanh((z + sp.H) / (sp.λ * sp.H)) + 1)
+w₀(x, y, z) = 0.01*randn() * (tanh((z + sp.H) / (sp.λ * sp.H)) + 1)
+b₀(x, y, z) = b_init(100sp.L, z)
+# We input inittime but it should be around B₀^-1/3 H^2/3
+expected_init_time = sp.H^(2/3) / sp.B₀^(1/3)
+@info "Fully-deepened turbulence expected to develop at t=$(2*expected_init_time)"
 set!(model; u=u₀, v=v₀, w=w₀, b=b₀, additional_tracer_initial_conditions(sp, mp)...)
 
 # Create a default output that saves the average state of the simulation u, v, w, b fields
@@ -137,6 +136,10 @@ end
 
 # Insert additional output code
 @additional_outputs! simulation
+
+# Run simulation until turbulence reaches depth
+
+
 @info simulation
 # run the simulation for initialisation phase
 @info "Initialising boundary layer turbulence"

@@ -15,15 +15,15 @@ using SpecialFunctions
 # Filament shape function
 γ(s, δ, α) = -1 + (δ / 2) * (erf(s + 1/(2α)) - erf(s - 1/(2α)))
 # Function to maximise for Ro
-square_curvature(x, δ, α) = 2*abs((γ(x, δ, α)^2 - (γ(x+1e-5, δ, α)^2 + γ(x-1e-5, δ, α)^2) / 2) / 1e-10)
+square_curvature(x, δ, α) = -2*((γ(x, δ, α)^2 - (γ(x+1e-5, δ, α)^2 + γ(x-1e-5, δ, α)^2) / 2) / 1e-10)
 # Function to maximise for Ri
 grad_squared(x, δ, α) = ((γ(x+1e-5, δ, α) - γ(x-1e-5, δ, α)) / (2e-5))^2
 
-default_inputs = (; Ro=1, Ri=0.6, Frb=0.1, Ek=nothing, Pr=1, α=1/4, λ=0.05, δ=-1/4, β=0.1, cool=0.01)
+default_inputs = (; Ro=1, Ri=0.6, Frb=0.1, Ek=0, Pr=1, α=1/4, λ=0.05, δ=-1/4, β=0.1)
 
 @inline function create_simulation_parameters(input_parameters=(; ); verbose=true)
     ip = (; default_inputs..., input_parameters...)
-    let Ro=ip.Ro, Ri=ip.Ri, Ek=ip.Ek, Pr=ip.Pr, α=ip.α, λ=ip.λ, δ=ip.δ, β=ip.β, cool=ip.cool
+    let Ro=ip.Ro, Ri=ip.Ri, Ek=ip.Ek, Pr=ip.Pr, α=ip.α, λ=ip.λ, δ=ip.δ, β=ip.β
         # Setting variables
         # Distance between fronts
         L = 1
@@ -38,11 +38,15 @@ default_inputs = (; Ro=1, Ri=0.6, Frb=0.1, Ek=nothing, Pr=1, α=1/4, λ=0.05, δ
         # Front height
         δH = δ * H
         # Difference in stratification
-        ΔN² = - (2Ro * f^2 * ℓ^2) / (H^2 * maximum([square_curvature(x, δ, α) for x in range(-3L, 3L, 1000)])) 
+        ΔN² = - (2Ro * f^2 * ℓ^2) / (H^2 * abs(maximum([square_curvature(x, δ, α) for x in range(-3L, 3L, 1000)])))
         # Boundary layer stratification
         Nb² = ((Ri * ΔN²^2 * H^2) / (f^2 * ℓ^2)) * maximum([grad_squared(x, δ, α) for x in range(-3L, 3L, 1000)])
         # Turbulent viscosity scale
-        ν = Ek == nothing ? nothing : (Ek * f * H^2)
+        ν = Ek * f * H^2
+        # Turbulent diffusivity scale
+        κ = ν / Pr
+        # Surface buoyancy flux
+        B₀  = κ * Nb²
         Nb = sqrt(Nb²)
         N₀ = sqrt(Nb² - ΔN²)
         # These aren't physical parameters but will be necessary for later
@@ -50,9 +54,9 @@ default_inputs = (; Ro=1, Ri=0.6, Frb=0.1, Ek=nothing, Pr=1, α=1/4, λ=0.05, δ
         # Simulation vertical extent
         Lz = 2.5H
         verbose && @info "Created simulation parameters\
-            \nInput:\n Ro=$Ro\n Ri=$Ri\n Ek=$Ek\n α=$α\n λ=$λ\n δ=$δ\
-        \nOutput:\n L=$L\n f=$f\n H=$H\n δH=$δH\n N₀=$N₀\n Nb=$Nb\n ℓ=$ℓ\n ν=$ν\n Lz=$Lz"
-        (; Ro, Ri, Ek, α, λ, δ, L, f, H, δH, N₀, Nb, ℓ, ν, Lz, β, cool)
+            \nInput:\n Ro=$Ro\n Ri=$Ri\n Ek=$Ek\n α=$α\n λ=$λ\n δ=$δ\n β=$β\
+        \nOutput:\n L=$L\n f=$f\n H=$H\n δH=$δH\n N₀=$N₀\n Nb=$Nb\n ℓ=$ℓ\n ν=$ν\n Lz=$Lz\n κ=$κ\n B₀=$B₀"
+        (; Ro, Ri, Ek, α, λ, δ, L, f, H, δH, N₀, Nb, ℓ, ν, κ, Lz, β, B₀)
     end
 end
 
