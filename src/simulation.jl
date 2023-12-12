@@ -44,8 +44,8 @@ horizontal_aspect_ratio = sp.Ny / sp.Nx
 
 grid = RectilinearGrid(GPU(),
         size=(sp.Nx, sp.Ny, sp.Nz),
-        x=(-5sp.L, 5sp.L),
-        y=(-5horizontal_aspect_ratio * sp.L, 5horizontal_aspect_ratio * sp.L),
+        x=(-sp.Lx, sp.Lx),
+        y=(-horizontal_aspect_ratio * sp.Lx, horizontal_aspect_ratio * sp.Lx),
         z=get_z_faces(sp),
         topology=(Periodic, Periodic, Bounded));
 
@@ -136,6 +136,10 @@ end
 
 # Insert additional output code
 @additional_outputs! simulation
+
+# Checkpointer
+mkdir("$output_folder/checkpoints")
+simulation.output_writers[:checkpointer] = Checkpointer(model; schedule=TimeInterval(10/sp.f), prefix="checkpoint", dir="$output_folder/checkpoints", verbose=true)
 
 # Run simulation until turbulence reaches depth
 

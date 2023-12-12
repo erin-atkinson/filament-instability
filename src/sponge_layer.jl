@@ -7,7 +7,9 @@ sponge_layer.jl
 using Oceananigans
 
 @inline function sponge_layer_damping_profile(simulation_parameters; σ=0.2)
-    (x, y, z) -> (z / simulation_parameters.Lz) > (σ-1) ? 0 : ( ((z / simulation_parameters.Lz) + 1 - σ) / σ)^2
+    @inline one_dim(x) = (-1 + σ) < x < (1 - σ) ? 0 : ( (abs(x) - (1 - σ)) / σ )^2
+    (x, y, z) -> one_dim(z / simulation_parameters.Lz) + one_dim(x / simulation_parameters.Lx)
+    #(x, y, z) -> (z / simulation_parameters.Lz) > (σ-1) ? 0 : (((z / simulation_parameters.Lz) + 1 - σ) / σ)^2
 end
 
 @inline function sponge_layer_damping(simulation_parameters; σ=0.2, c=0.2, target=0)
