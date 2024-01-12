@@ -4,65 +4,87 @@ using CairoMakie
 using Statistics
 using ImageFiltering: imfilter, Kernel.gaussian
 
-
-@inline function xz_state_figure(runname, n; resolution=(1000, 500))
+@inline function average_∇b²(runname, slice; σ=0)
     foldername = "../scratch/filament-instability/$runname"
     filename = "down_front_mean.jld2"
+    
     paramfilename = "parameters.jld2"
-    frames, grid = jldopen("$foldername/$filename") do file
-        keys(file["timeseries/t"]), file["serialized/grid"]
-        end;
-    xᶜᵃᵃ = xnodes(Center, grid)
-    xᶠᵃᵃ = xnodes(Face, grid)
-    zᵃᵃᶜ = znodes(Center, grid)
-    zᵃᵃᶠ = znodes(Face, grid)
-    function ψᶜᶜᶜ(uᶠᶜᶜ, wᶜᶜᶠ, xᶜᵃᵃ, xᶠᵃᵃ, zᵃᵃᶜ, zᵃᵃᶠ)
-        # Integrate
-        Δzᵃᵃᶜ = reshape(diff(zᵃᵃᶠ), 1, length(zᵃᵃᶜ))
-        Δx = xᶠᵃᵃ[2] - xᶠᵃᵃ[1]
-        aᶠᶜᶜ = cumsum(uᶠᶜᶜ .* Δzᵃᵃᶜ; dims=3)
-
-        bᶜᶜᶠ = cumsum(wᶜᶜᶠ .* Δx; dims=1)
-        aᶜᶜᶜ = (circshift(aᶠᶜᶜ, (-1, 0)) .+ aᶠᶜᶜ) / 2
-        bᶜᶜᶜ = (bᶜᶜᶠ[:, 1:end-1] .+ bᶜᶜᶠ[:, 2:end]) ./ 2
-        return -aᶜᶜᶜ .+ bᶜᶜᶜ
-    end
     sp = jldopen("$foldername/$paramfilename") do file
         file["parameters/simulation"]
     end
+    
     file = jldopen("$foldername/$filename")
-
-
-    frame = frames[n]
-
-
-    ts = [file["timeseries/t/$f"] for f in frames] .- 1
-    v = file["timeseries/v_dfm/$frame"][:, 1, :]
-
-    u = file["timeseries/u_dfm/$frame"][:, 1, :]
-    w = file["timeseries/w_dfm/$frame"][:, 1, :]
-
-    b = file["timeseries/b_dfm/$frame"][:, 1, :]
-    σ=0
-    # Get the secondary cirulation streamfunction
-    ψ = imfilter(ψᶜᶜᶜ(u, w, xᶜᵃᵃ, xᶠᵃᵃ, zᵃᵃᶜ, zᵃᵃᶠ), gaussian((σ, 0), (4σ+1, 5)), "circular")
-    # Vorticity
     
-    ζ = imfilter((circshift(v, (-1, 0)) .- circshift(v, (1, 0))) / (xᶜᵃᵃ[3] - xᶜᵃᵃ[1]), gaussian((σ, 0), (4σ+1, 5)), "circular")
+    frames = keys(file["timeseries/t"])[101:end-1]
+    grid = file["serialized/grid"]
+    xᶠᵃᵃ = xnodes(Face, grid)
+    Δx = xᶠᵃᵃ[2] - xᶠᵃᵃ[1]
     
-    title = "Ro=$(round(sp.Ro; digits=1)), Ri=$(round(sp.Ri; digits=2)), t = $(round(ts[n]; digits=2))"
-
-    axis_kwargs = (; xlabel="x", ylabel="z", title, limits=(-5, 5, -0.12, 0))
-
-    fig = Figure(; resolution)
-    ax = Axis(fig[1, 1]; axis_kwargs...)
-
-    ht = heatmap!(ax, xᶜᵃᵃ, zᵃᵃᶜ, v; colormap=:balance, colorrange=(-5, 5))
-    contour!(ax, xᶜᵃᵃ, zᵃᵃᶜ, ψ; colormap=:BrBG_10, levels=range(-0.024, 0.024, 40), alpha=1, linewidth=1)
-    bstep = 1.875
-    brange = minimum(b):bstep:maximum(b)
-    contour!(ax, xᶜᵃᵃ, zᵃᵃᶜ, b; color=(:black, 0.5), levels=brange, linewidth=1)
-    Colorbar(fig[1, 2], ht, label=L"\langle ζ \rangle")
+    ts = [file["timeseries/t/$frame"] for frame in frames] .- 1
+    ∇b² = map(frames) do frame
+        b = imfilter(mean(file["timeseries/b_dfm/$frame"][:, 1, slice]; dims=2)[:, 1], gaussian((σ, )))
+        mean(((circshift(b, -1) - circshift(b, 1)) ./ Δx).^2)# / mean(b.^2)
+    end
     close(file)
-    return fig
+    return (; ts, ∇b²)
+end
+
+@inline function symmetric_u(runname, slice)
+    foldername = "../scratch/filament-instability/$runname"
+    filename = "down_front_mean.jld2"
+    
+    paramfilename = "parameters.jld2"
+    sp = jldopen("$foldername/$paramfilename") do file
+        file["parameters/simulation"]
+    end
+    
+    file = jldopen("$foldername/$filename")
+    
+    frames = keys(file["timeseries/t"])[101:end-1]
+    
+    ts = [file["timeseries/t/$frame"] for frame in frames] .- 1
+    u_sym = map(frames) do frame
+        mean(file["timeseries/u_dfm/$frame"][512:end, 1, slice]) - mean(file["timeseries/u_dfm/$frame"][1:512, 1, slice])
+    end
+    close(file)
+    return (; ts, u_sym)
+end
+
+@inline function plot_∇b²!(layout_cell, runnames, slice; σ=0)
+    plot_datas = map(rn->average_∇b²(rn, slice; σ=0), runnames)
+    
+    axis_kwargs = (;
+        xlabel="t",
+        ylabel=L"|\nabla b|^2"
+    )
+    
+    ax = Axis(layout_cell; axis_kwargs...)
+    αs = reverse(range(0.3, 1.0, length(runnames)))
+    map(zip(plot_datas, αs)) do (plot_data, α)
+        lines!(ax, plot_data.ts, plot_data.∇b²; color=(:red, α))
+    end
+end
+
+@inline function plot_u_sym!(layout_cell, runnames, slice)
+    plot_datas = map(rn->symmetric_u(rn, slice), runnames)
+    
+    axis_kwargs = (;
+        xlabel="t",
+        ylabel=L"u_\text{sym}"
+    )
+    
+    ax = Axis(layout_cell; axis_kwargs...)
+    αs = reverse(range(0.3, 1.0, length(runnames)))
+    map(zip(plot_datas, αs)) do (plot_data, α)
+        lines!(ax, plot_data.ts, plot_data.u_sym; color=(:red, α))
+    end
+end
+
+@inline function frontogenesis_bu(runnames, slice, legendtitle, runlabels; σ=0, resolution=(1000, 500))
+    fig = Figure(; resolution)
+    plot_∇b²!(fig[1, 1], runnames, slice; σ=0)
+    lns = plot_u_sym!(fig[1, 2], runnames, slice)
+    Legend(fig[1, 3], lns, runlabels, legendtitle)
+    colgap!(fig.layout, 15)
+    fig
 end
