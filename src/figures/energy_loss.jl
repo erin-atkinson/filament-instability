@@ -5,64 +5,102 @@ using Statistics
 using ImageFiltering: imfilter, Kernel.gaussian
 
 
-@inline function xz_state_figure(runname, n; resolution=(1000, 500))
+@inline function energy_loss_data(runname)
     foldername = "../scratch/filament-instability/$runname"
+    bfilename = "buoyancy.jld2"
+    vfilename = "down_front.jld2"
     filename = "down_front_mean.jld2"
     paramfilename = "parameters.jld2"
-    frames, grid = jldopen("$foldername/$filename") do file
-        keys(file["timeseries/t"]), file["serialized/grid"]
-        end;
-    xᶜᵃᵃ = xnodes(Center, grid)
-    xᶠᵃᵃ = xnodes(Face, grid)
-    zᵃᵃᶜ = znodes(Center, grid)
-    zᵃᵃᶠ = znodes(Face, grid)
-    function ψᶜᶜᶜ(uᶠᶜᶜ, wᶜᶜᶠ, xᶜᵃᵃ, xᶠᵃᵃ, zᵃᵃᶜ, zᵃᵃᶠ)
-        # Integrate
-        Δzᵃᵃᶜ = reshape(diff(zᵃᵃᶠ), 1, length(zᵃᵃᶜ))
-        Δx = xᶠᵃᵃ[2] - xᶠᵃᵃ[1]
-        aᶠᶜᶜ = cumsum(uᶠᶜᶜ .* Δzᵃᵃᶜ; dims=3)
-
-        bᶜᶜᶠ = cumsum(wᶜᶜᶠ .* Δx; dims=1)
-        aᶜᶜᶜ = (circshift(aᶠᶜᶜ, (-1, 0)) .+ aᶠᶜᶜ) / 2
-        bᶜᶜᶜ = (bᶜᶜᶠ[:, 1:end-1] .+ bᶜᶜᶠ[:, 2:end]) ./ 2
-        return -aᶜᶜᶜ .+ bᶜᶜᶜ
-    end
     sp = jldopen("$foldername/$paramfilename") do file
         file["parameters/simulation"]
     end
     file = jldopen("$foldername/$filename")
-
-
-    frame = frames[n]
-
-
+    bfile = jldopen("$foldername/$bfilename")
+    vfile = jldopen("$foldername/$vfilename")
+    
+    frames = keys(file["timeseries/t"])[1:end-1]
+    grid = file["serialized/grid"]
+    
+    xᶜᵃᵃ = xnodes(Center, grid)
+    xᶠᵃᵃ = xnodes(Face, grid)
+    zᵃᵃᶜ = znodes(Center, grid)
+    zᵃᵃᶠ = znodes(Face, grid)
+    Δzᵃᵃᶜ = reshape(diff(zᵃᵃᶠ), 1, length(zᵃᵃᶜ))
+    Δx = xᶠᵃᵃ[2] - xᶠᵃᵃ[1]
+    
+    @inline function ∂x(fᶜᵃᵃ)
+    return (circshift(fᶜᵃᵃ, (-1, 0)) - circshift(fᶜᵃᵃ, (1, 0))) / (2Δx)
+    end
+    @inline function ∂z(fᶜᵃᵃ)
+        let a = (circshift(fᶜᵃᵃ, (0, -1)) - circshift(fᶜᵃᵃ, (0, 1))) ./ (2Δzᵃᵃᶜ)
+            a[:, 1] .= 0
+            a[:, end] .= 0
+            a
+        end
+    end
+    
+    z_omit_fraction=0.01
+    # Boundary layer cells
+    blc = zᵃᵃᶜ .> -sp.H
+    # Central boundary layer cells
+    cblc = -sp.H*z_omit_fraction .> zᵃᵃᶜ .> -sp.H * (1-z_omit_fraction)
+    axtitle = "Ro=$(round(sp.Ro; digits=1)), Ri=$(round(sp.Ri; digits=2))"
+    @inline BFLUX(frame)= -cumsum(Δzᵃᵃᶜ.*(bfile["timeseries/bwFLUX/$frame"][:, 1, 1:length(zᵃᵃᶜ)] .+ bfile["timeseries/bwFLUX/$frame"][:, 1, 2:length(zᵃᵃᶜ)+1]); dims=2)./2
+    @inline LSP(frame) = cumsum(Δx.*vfile["timeseries/vuFLUX/$frame"][:, 1, :]; dims=1) .* ∂x(file["timeseries/v_dfm/$frame"][:, 1, :])
+    @inline VSP(frame) = let vwFLUX = (vfile["timeseries/vwFLUX/$frame"][:, 1, 1:length(zᵃᵃᶜ)] .+ vfile["timeseries/vwFLUX/$frame"][:, 1, 2:length(zᵃᵃᶜ)+1]) / 2
+        cumsum(Δzᵃᵃᶜ.* vwFLUX; dims=2) .* ∂z(file["timeseries/v_dfm/$frame"][:, 1, :])
+    end
     ts = [file["timeseries/t/$f"] for f in frames] .- 1
-    v = file["timeseries/v_dfm/$frame"][:, 1, :]
-
-    u = file["timeseries/u_dfm/$frame"][:, 1, :]
-    w = file["timeseries/w_dfm/$frame"][:, 1, :]
-
-    b = file["timeseries/b_dfm/$frame"][:, 1, :]
-    σ=0
-    # Get the secondary cirulation streamfunction
-    ψ = imfilter(ψᶜᶜᶜ(u, w, xᶜᵃᵃ, xᶠᵃᵃ, zᵃᵃᶜ, zᵃᵃᶠ), gaussian((σ, 0), (4σ+1, 5)), "circular")
-    # Vorticity
     
-    ζ = imfilter((circshift(v, (-1, 0)) .- circshift(v, (1, 0))) / (xᶜᵃᵃ[3] - xᶜᵃᵃ[1]), gaussian((σ, 0), (4σ+1, 5)), "circular")
-    
-    title = "Ro=$(round(sp.Ro; digits=1)), Ri=$(round(sp.Ri; digits=2)), t = $(round(ts[n]; digits=2))"
-
-    axis_kwargs = (; xlabel="x", ylabel="z", title, limits=(-5, 5, -0.12, 0))
-
-    fig = Figure(; resolution)
-    ax = Axis(fig[1, 1]; axis_kwargs...)
-
-    ht = heatmap!(ax, xᶜᵃᵃ, zᵃᵃᶜ, v; colormap=:balance, colorrange=(-5, 5))
-    contour!(ax, xᶜᵃᵃ, zᵃᵃᶜ, ψ; colormap=:BrBG_10, levels=range(-0.024, 0.024, 40), alpha=1, linewidth=1)
-    bstep = 1.875
-    brange = minimum(b):bstep:maximum(b)
-    contour!(ax, xᶜᵃᵃ, zᵃᵃᶜ, b; color=(:black, 0.5), levels=brange, linewidth=1)
-    Colorbar(fig[1, 2], ht, label=L"\langle ζ \rangle")
+    data = map(frames) do frame
+        fields = [BFLUX(frame) .* Δzᵃᵃᶜ .* Δx, LSP(frame) .* Δzᵃᵃᶜ .* Δx, VSP(frame) .* Δzᵃᵃᶜ .* Δx]
+        sum.([[field[:, cblc] for field in fields]..., [field[:, blc] for field in fields]...])
+    end
     close(file)
-    return fig
+    close(bfile)
+    close(vfile)
+    
+    BFLUX = map(x->x[1], data)
+    LSP = map(x->x[2], data)
+    VSP = map(x->x[3], data)
+    BFLUX_surface = map(x->x[4], data)
+    LSP_surface = map(x->x[5], data)
+    VSP_surface = map(x->x[6], data)
+    
+    return (; ts, BFLUX, LSP, VSP, BFLUX_surface, LSP_surface, VSP_surface, axtitle)
+end
+
+@inline function energy_loss!(layout_cell; ts, BFLUX, LSP, VSP, BFLUX_surface, LSP_surface, VSP_surface, axtitle, kwargs...)
+    axis_kwargs = (;
+        xlabel="t",
+        ylabel="Energy loss",
+        title=axtitle,
+        limits=(0, ts[end], -0.0015, 0.0085),
+        xlabelsize=24,
+        ylabelsize=16)
+    
+    cols = [:blue, :red, :green]
+    cols_boundary = [(:blue, 0.3), (:red, 0.3), (:green, 0.3)]
+    
+    ax = Axis(layout_cell; axis_kwargs...)
+    lns = [lines!(ax, ts, x; color=c) for (x, c) in zip((BFLUX, LSP, VSP), cols)]
+    [lines!(ax, ts, x; color=c) for (x, c) in zip((BFLUX_surface, LSP_surface, VSP_surface), cols_boundary)]
+    return lns
+end
+@inline function energy_loss(runnames; resolution=(1000, 250))
+    n_plots = length(runnames)
+    plot_datas = energy_loss_data.(runnames)
+    fig = Figure(; resolution)
+    lnss = map(enumerate(plot_datas)) do (i, plot_data)
+        energy_loss!(fig[1, i]; plot_data...)
+    end
+    Legend(fig[1, n_plots+1], lnss[1], ["BFLUX", "LSP", "VSP"])
+    if n_plots > 1
+        hideydecorations!.(fig.content[2:n_plots])
+        for ax in fig.content[2:n_plots]
+            ax.ygridvisible = true
+        end
+    end
+    colgap!(fig.layout, 15)
+    fig
 end
