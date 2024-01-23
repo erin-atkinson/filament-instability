@@ -12,8 +12,6 @@ Pr=1: Prandtl number for buoyancy diffusion
 δ=-0.25: Fractional height change of transition to deep water across filament
 
 The boundary layer height is defined by a shape function
-$$
-\gamma(s; \alpha, \delta) = -1 + \frac{\delta}{2} \left(\text{erf}\left(s + \frac{1}{2\alpha}\right) - \text{erf}\left(s - \frac{1}{2\alpha}\right)\right)
-$$
+$$\gamma(s; \alpha, \delta) = -1 + \frac{\delta}{2} \left(\text{erf}\left(s + \frac{1}{2\alpha}\right) - \text{erf}\left(s - \frac{1}{2\alpha}\right)\right)$$
 
 The simulation initially develops some boundary layer turbulence. The fluctuation fields $\vec {u}'$ and $b'$ are then added to the nominal filament state.
