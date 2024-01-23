@@ -57,7 +57,7 @@ default_inputs = (; Ro=1, Ri=0.6, Frb=0.1, Ek=0, Pr=1, α=1/4, λ=0.05, δ=-1/4,
         verbose && @info "Created simulation parameters\
             \nInput:\n Ro=$Ro\n Ri=$Ri\n Ek=$Ek\n α=$α\n λ=$λ\n δ=$δ\n β=$β\
         \nOutput:\n L=$L\n f=$f\n H=$H\n δH=$δH\n N₀=$N₀\n Nb=$Nb\n ℓ=$ℓ\n ν=$ν\n Lz=$Lz\n κ=$κ\n B₀=$B₀"
-        (; Ro, Ri, Ek, α, λ, δ, L, f, H, δH, N₀, Nb, ℓ, ν, κ, Lz, Lx, β, B₀)
+        (; Ro, Ri, Ek, α, λ, δ, L, f, H, δH, N₀, Nb, ℓ, ν, κ, Lz, Lx, β, B₀, pickup=false)
     end
 end
 

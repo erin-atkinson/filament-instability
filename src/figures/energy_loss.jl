@@ -39,7 +39,7 @@ using ImageFiltering: imfilter, Kernel.gaussian
         end
     end
     
-    z_omit_fraction=0.01
+    z_omit_fraction=0.1
     # Boundary layer cells
     blc = zᵃᵃᶜ .> -sp.H
     # Central boundary layer cells
@@ -75,8 +75,8 @@ end
         xlabel="t",
         ylabel="Energy loss",
         title=axtitle,
-        limits=(0, ts[end], -0.0015, 0.0085),
-        xlabelsize=24,
+        limits=(0, ts[2601], -0.0015, 0.0085),
+        xlabelsize=16,
         ylabelsize=16)
     
     cols = [:blue, :red, :green]

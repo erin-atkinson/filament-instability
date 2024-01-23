@@ -18,7 +18,7 @@ using ImageFiltering: imfilter, Kernel.gaussian
     bfile = jldopen("$foldername/$bfilename")
     vfile = jldopen("$foldername/$vfilename")
     
-    frames = keys(file["timeseries/t"])[1:end-1]
+    frames = keys(file["timeseries/t"])[101:2601]
     grid = file["serialized/grid"]
     
     xᶜᵃᵃ = xnodes(Center, grid)
@@ -72,7 +72,7 @@ end
     axis_kwargs = (;
         xlabel="t",
         ylabel="z",
-        limits=(0, ts[end], zs[96], zs[end]),
+        limits=(ts[1], ts[end], zs[33], zs[end]),
     )
     # Color limit should be the largest value at the start, ignore the end bit
     cmax = max(

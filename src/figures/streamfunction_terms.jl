@@ -13,7 +13,7 @@ using ImageFiltering: imfilter, Kernel.gaussian
     bfilename = "buoyancy.jld2"
     paramfilename = "parameters.jld2"
     frames, grid = jldopen("$foldername/$filename") do file
-        keys(file["timeseries/t"])[101:end-2], file["serialized/grid"]
+        keys(file["timeseries/t"])[101:2601], file["serialized/grid"]
         end;
     xᶜᵃᵃ = xnodes(Center, grid)
     xᶠᵃᵃ = xnodes(Face, grid)
@@ -43,7 +43,7 @@ using ImageFiltering: imfilter, Kernel.gaussian
     sp = jldopen("$foldername/$paramfilename") do file
         file["parameters/simulation"]
     end
-    z_omit_fraction=0.01
+    z_omit_fraction=0.1
     # Boundary layer cells
     blc = zᵃᵃᶜ .> -sp.H
     # Central boundary layer cells
@@ -73,7 +73,7 @@ using ImageFiltering: imfilter, Kernel.gaussian
     ∂²ψ∂t²(i) = (ψ(i+1) + ψ(i-1) - 2ψ(i)) / Δt^2
     data = map(2:length(frames)-1) do i
        map([∇²(∂²ψ∂t²(i)), ∂z(∂z(sp.f^2 * ψ(i))), -J₁₁(i), J₁₂(i), J₂₁(i), -J₂₂(i), -sp.f*∂z(∂z(w′v′(i))), ∂x(∂z(w′b′(i)))]) do field
-            sum((field * Δx .* Δzᵃᵃᶜ)[1:512, cblc])
+            sum((field * Δx .* Δzᵃᵃᶜ)[1:length(xᶜᵃᵃ)÷2, cblc])
         end
     end
     # Non linear terms
@@ -86,7 +86,7 @@ using ImageFiltering: imfilter, Kernel.gaussian
     δ∂tFψ(i) = let a(i)=∂x(Fz(i)) - ∂z(Fx(i)); (a(i+1) - a(i)) / Δt end
     data_nl = map(2:length(frames)-1) do i
        map([-δJ₁₁(i), δJ₁₂(i), δJ₂₁(i), -δJ₂₂(i), -δatw₁(i), δatw₂(i), -δ∂tFψ(i)]) do field
-            sum((field * Δx .* Δzᵃᵃᶜ)[1:512, cblc])
+            sum((field * Δx .* Δzᵃᵃᶜ)[1:length(xᶜᵃᵃ)÷2, cblc])
         end
     end
     close(file)
@@ -108,13 +108,14 @@ end
     axis_kwargs = (;
         xlabel = "t",
         ylabel = L"\frac{\text{d}^2C}{\text{d}t^2}",
-        title = axtitle
+        title = axtitle,
+        limits = (0, ts[end], -1, 1)
     )
     ax = Axis(layout_cell; axis_kwargs...)
-    ln1 = line!(ax, ts, ∂²C∂t²; color=:black)
-    ln2 = line!(ax, ts, linear_terms; color=:blue)
-    ln3 = line!(ax, ts, nonlinear_terms; color=:green)
-    ln4 = line!(ax, ts, linear_terms .+ nonlinear_terms; color=:orange)
+    ln1 = lines!(ax, ts, ∂²C∂t²; color=:black)
+    ln2 = lines!(ax, ts, linear_terms)
+    ln3 = lines!(ax, ts, nonlinear_terms)
+    ln4 = lines!(ax, ts, linear_terms .+ nonlinear_terms)
     return [ln1, ln2, ln3, ln4]
 end
 
@@ -123,7 +124,7 @@ end
     plot_datas = ψterms.(runnames; σ)
     fig = Figure(; resolution)
     lnss = map(enumerate(plot_datas)) do (i, plot_data)
-        ψterms!(fig[1, :]; plot_data...)
+        ψterms!(fig[1, i]; plot_data...)
     end
     Legend(fig[1, n_plots+1], lnss[1], ["Actual", "Linear terms", "Non-linear terms", "Sum"])
     if n_plots > 1

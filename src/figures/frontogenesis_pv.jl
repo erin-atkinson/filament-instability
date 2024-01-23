@@ -91,7 +91,7 @@ end
         U = u .^2 .+ w .^2
         pinds, ninds = let q = qᶜᶜᶜ(v, b, Δzᵃᵃᶜ, Δx, sp.f); (q .>= 0, q .< 0) end
         
-        (sum(U[pinds]) / sum(ΔVᶜᵃᶜ[pinds]), sum(U[ninds]) / sum(ΔVᶜᵃᶜ[ninds]))
+        (sum(U[pinds] .* ΔVᶜᵃᶜ[pinds]) / sum(ΔVᶜᵃᶜ[pinds]), sum(U[ninds] .* ΔVᶜᵃᶜ[ninds]) / sum(ΔVᶜᵃᶜ[ninds]))
     end
     Upos = map(x->x[1], U)
     Uneg = map(x->x[2], U)

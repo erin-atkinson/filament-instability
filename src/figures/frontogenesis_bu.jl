@@ -15,7 +15,7 @@ using ImageFiltering: imfilter, Kernel.gaussian
     
     file = jldopen("$foldername/$filename")
     
-    frames = keys(file["timeseries/t"])[101:end-1]
+    frames = keys(file["timeseries/t"])[101:2601]
     grid = file["serialized/grid"]
     xᶠᵃᵃ = xnodes(Face, grid)
     Δx = xᶠᵃᵃ[2] - xᶠᵃᵃ[1]
@@ -40,11 +40,11 @@ end
     
     file = jldopen("$foldername/$filename")
     
-    frames = keys(file["timeseries/t"])[101:end-1]
+    frames = keys(file["timeseries/t"])[101:2601]
     
     ts = [file["timeseries/t/$frame"] for frame in frames] .- 1
     u_sym = map(frames) do frame
-        mean(file["timeseries/u_dfm/$frame"][512:end, 1, slice]) - mean(file["timeseries/u_dfm/$frame"][1:512, 1, slice])
+        mean(file["timeseries/u_dfm/$frame"][end÷2:end, 1, slice]) - mean(file["timeseries/u_dfm/$frame"][1:end÷2, 1, slice])
     end
     close(file)
     return (; ts, u_sym)
@@ -70,7 +70,7 @@ end
     
     axis_kwargs = (;
         xlabel="t",
-        ylabel=L"u_\text{sym}"
+        ylabel=L"u_\text{asym}"
     )
     
     ax = Axis(layout_cell; axis_kwargs...)

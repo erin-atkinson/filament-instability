@@ -39,7 +39,7 @@ using ImageFiltering: imfilter, Kernel.gaussian
         end
     end
     
-    z_omit_fraction=0.01
+    z_omit_fraction=0.1
     # Boundary layer cells
     blc = zᵃᵃᶜ .> -sp.H
     # Central boundary layer cells

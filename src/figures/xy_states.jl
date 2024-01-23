@@ -30,25 +30,30 @@ using ImageFiltering: imfilter, Kernel.gaussian
     yᵃᶜᵃ = ynodes(Center, grid)
     zᵃᵃᶜ = znodes(Center, grid)
     zᵃᵃᶠ = znodes(Face, grid)
-    z = zᵃᵃᶜ[slice]
+    z_text = if length(slice) > 1
+        "[$(round(zᵃᵃᶜ[slice[1]]; digits=2)), $(round(zᵃᵃᶜ[slice[end]]; digits=2))]"
+    else
+        "$(round(zᵃᵃᶜ[slice[1]]; digits=2))"
+    end
+    
     
     # We just need the v and b
-    v = file["$field/data"][4:end-3, 4:end-3, slice]
-    b = file["b/data"][4:end-3, 4:end-3, slice]
+    v = mean(file["$field/data"][4:end-3, 4:end-3, slice]; dims=3)[:, :, 1]
+    b = mean(file["b/data"][4:end-3, 4:end-3, slice]; dims=3)[:, :, 1]
     t = file["clock"].time
     close(file)
     
-    figtitle = "Ro=$(round(sp.Ro; digits=1)), Ri=$(round(sp.Ri; digits=2)), z = $(round(z; digits=2))"
+    figtitle = "Ro=$(round(sp.Ro; digits=1)), Ri=$(round(sp.Ri; digits=2)), z = $z_text"
     axtitle = "t = $(round(t; digits=2))"
     
     (v, b) = map([v, b]) do field
         imfilter(field, gaussian((σ, σ)), "circular")
     end
     
-    return (; figtitle, axtitle, xs=xᶜᵃᵃ, ys=yᵃᶜᵃ, z, v, b)
+    return (; figtitle, axtitle, xs=xᶜᵃᵃ, ys=yᵃᶜᵃ, v, b)
 end
 
-@inline function xy_state!(layout_cell; axtitle, xs, ys, v, b, kwargs...)
+@inline function xy_state!(layout_cell; axtitle, xs, ys, v, b, max_val=5, kwargs...)
     # Create a single plot in layout_cell
     axis_kwargs = (;
         xlabel="x",
@@ -57,24 +62,24 @@ end
         limits=(-5, 5, -5, 5))
     
     # The steps between contours
-    bstep = 1.875
+    bstep = 2*1.875
     
     brange = minimum(b):bstep:maximum(b)
     
     ax = Axis(layout_cell; axis_kwargs...)
-    ht = heatmap!(ax, xs, ys, v; colormap=:balance, colorrange=(-5, 5))
-    contour!(ax, xs, ys, b; color=(:black, 0.5), levels=brange, linewidth=1)
+    ht = heatmap!(ax, xs, ys, v; colormap=:balance, colorrange=(-max_val, max_val))
+    contour!(ax, xs, ys, b; color=(:black, 0.3), levels=brange, linewidth=1)
     return ht
 end
 
 @inline function xy_states(runname, ns, slice; resolution=(1000, 500), σ=16, field="v")
     n_plots = length(ns)
-    plot_datas = xy_state_data.(runname, ns, slice; σ, field)
-    
+    plot_datas = [xy_state_data(runname, n, slice; σ, field) for n in ns]
+    max_val = maximum(map(plot_data->maximum(abs.(plot_data.v)), plot_datas))
     fig = Figure(; resolution)
     # Make each plot
     hts = map(enumerate(plot_datas)) do (i, plot_data)
-        xy_state!(fig[1, i]; plot_data...)
+        xy_state!(fig[1, i]; plot_data..., max_val)
     end
     # Add a colourbar
     Colorbar(fig[1, n_plots+1], hts[1], label=L"%$field (x, y, z)")

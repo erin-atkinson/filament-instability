@@ -100,7 +100,7 @@ simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 b = model.tracers.b
 
 # Create output folder
-output_folder = if isdir("$output_folder")
+output_folder = if isdir("$output_folder") && !sp.pickup
     i = [1]
     while isdir("$(output_folder)_$(i[1])")
         i[1] = i[1] + 1
@@ -109,8 +109,9 @@ output_folder = if isdir("$output_folder")
 else
     output_folder
 end
-
-mkdir(output_folder)
+if !isdir("$output_folder")
+    mkdir(output_folder)
+end
 @info "Creating output writers at $output_folder"
 
 # Mean fields
@@ -146,68 +147,72 @@ simulation.output_writers[:checkpointer] = Checkpointer(model; schedule=TimeInte
 
 @info simulation
 # run the simulation for initialisation phase
-@info "Initialising boundary layer turbulence"
-run!(simulation)
-if run_time == 0
-    return
-end
+if sp.pickup
+    @info "Picking up previous sim"
+    simulation.stop_time += run_time
+    run!(simulation; pickup=true)
+else
+    @info "Initialising boundary layer turbulence"
+    run!(simulation)
 
-# set the filament
-@info "Setting filament state"
-# Need to edit GPU contents
-CUDA.@allowscalar let xsᶜᶠᶜ = Array(xnodes(grid, Center(), Face(), Center())),
-    zsᶜᶠᶜ = Array(znodes(grid, Center(), Face(), Center())),
-    xsᶜᶜᶜ = Array(xnodes(grid, Center(), Center(), Center())),
-    zsᶜᶜᶜ = Array(znodes(grid, Center(), Center(), Center()))
-    
-    v_mean_new = [v_filament(x, z) for x in xsᶜᶠᶜ, y in [1], z in zsᶜᶠᶜ]
-    b_mean_new = [b_filament(x, z) for x in xsᶜᶜᶜ, y in [1], z in zsᶜᶜᶜ]
-    
-    # Get the current state
-    u_new = Array(interior(model.velocities.u))
-    v_new = Array(interior(model.velocities.v))
-    w_new = Array(interior(model.velocities.w))
-    b_new = Array(interior(model.tracers.b))
-    
-    # Remove any mean flow
-    u_new .-= mean(u_new; dims=2)
-    v_new .-= mean(v_new; dims=2)
-    w_new .-= mean(w_new; dims=2)
-    b_new .-= mean(b_new; dims=2)
-    
-    # Add a filament on
-    v_new .+= v_mean_new
-    b_new .+= b_mean_new
-    
-    set!(model; u=u_new, v=v_new, w=w_new, b=b_new)
-    # Should also remove tendencies?
-    #=
-    model.timestepper.Gⁿ.u .= 0
-    model.timestepper.Gⁿ.v .= 0
-    model.timestepper.Gⁿ.w .= 0
-    model.timestepper.Gⁿ.b .= 0
-    
-    model.timestepper.G⁻.u .= 0
-    model.timestepper.G⁻.v .= 0
-    model.timestepper.G⁻.w .= 0
-    model.timestepper.G⁻.b .= 0
-    =#
-    # DEBUG
-    # Save the resultant state
-    #=
-    jldopen("$output_folder/DEBUG_filament_state.jld2", "w") do file
-        file["u_new"] = u_new
-        file["v_new"] = v_new
-        file["w_new"] = w_new
-        file["b_new"] = b_new
+    # set the filament
+    @info "Setting filament state"
+    # Need to edit GPU contents
+    CUDA.@allowscalar let xsᶜᶠᶜ = Array(xnodes(grid, Center(), Face(), Center())),
+        zsᶜᶠᶜ = Array(znodes(grid, Center(), Face(), Center())),
+        xsᶜᶜᶜ = Array(xnodes(grid, Center(), Center(), Center())),
+        zsᶜᶜᶜ = Array(znodes(grid, Center(), Center(), Center()))
+
+        v_mean_new = [v_filament(x, z) for x in xsᶜᶠᶜ, y in [1], z in zsᶜᶠᶜ]
+        b_mean_new = [b_filament(x, z) for x in xsᶜᶜᶜ, y in [1], z in zsᶜᶜᶜ]
+
+        # Get the current state
+        u_new = Array(interior(model.velocities.u))
+        v_new = Array(interior(model.velocities.v))
+        w_new = Array(interior(model.velocities.w))
+        b_new = Array(interior(model.tracers.b))
+
+        # Remove any mean flow
+        u_new .-= mean(u_new; dims=2)
+        v_new .-= mean(v_new; dims=2)
+        w_new .-= mean(w_new; dims=2)
+        b_new .-= mean(b_new; dims=2)
+
+        # Add a filament on
+        v_new .+= v_mean_new
+        b_new .+= b_mean_new
+
+        set!(model; u=u_new, v=v_new, w=w_new, b=b_new)
+        # Should also remove tendencies?
+        #=
+        model.timestepper.Gⁿ.u .= 0
+        model.timestepper.Gⁿ.v .= 0
+        model.timestepper.Gⁿ.w .= 0
+        model.timestepper.Gⁿ.b .= 0
+
+        model.timestepper.G⁻.u .= 0
+        model.timestepper.G⁻.v .= 0
+        model.timestepper.G⁻.w .= 0
+        model.timestepper.G⁻.b .= 0
+        =#
+        # DEBUG
+        # Save the resultant state
+        #=
+        jldopen("$output_folder/DEBUG_filament_state.jld2", "w") do file
+            file["u_new"] = u_new
+            file["v_new"] = v_new
+            file["w_new"] = w_new
+            file["b_new"] = b_new
+        end
+        =#
     end
-    =#
+
+    # Insert additional initialisation code
+    @additional_post_init! model
+
+    # run for the rest of the simulation
+    @info "Running filament simulation"
+    simulation.stop_time += run_time
+    run!(simulation)
 end
 
-# Insert additional initialisation code
-@additional_post_init! model
-
-# run for the rest of the simulation
-@info "Running filament simulation"
-simulation.stop_time += run_time
-run!(simulation)
