@@ -122,7 +122,7 @@ end
     # Maximum heatmap value
     cmax = cmax == nothing ? maximum([maximum(abs.(a)) for a in plot_datas]) : cmax
     
-    ax = Axis(layout_cell; title, xlabel="x", ylabel="z", limits=(xs[1], xs[end], zs[1], zs[end]),  axis_kwargs...)
+    ax = Axis(fig[1, 1]; title, xlabel="x", ylabel="z", limits=(xs[1], xs[end], zs[1], zs[end]),  axis_kwargs...)
     
     ht = heatmap!(ax, xs, zs, plot_data; colormap=:balance, colorrange=(-cmax, cmax))
     ψ != nothing && contour!(ax, xs, zs, ψ; colormap=:BrBG_10, levels=ψrange, alpha=1, linewidth=1)
