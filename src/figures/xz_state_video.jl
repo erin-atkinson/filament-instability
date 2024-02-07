@@ -99,7 +99,7 @@ end
     figtitle, ts, xs, zs, plot_datas, bs, ψs = xz_state_data(foldername; σ, field, Δ)
     
     @info "Generating scene"
-    fig = Figure(; resolution, backgroundcolor = (:white, 0.0))
+    fig = Figure(; resolution) # , backgroundcolor = (:white, 0.0)
     
     n = Observable(101)
     n_max = argmin(abs.(ts .- t_max))
