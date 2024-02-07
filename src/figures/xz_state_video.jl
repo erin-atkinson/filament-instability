@@ -44,12 +44,12 @@ end
     ψs = field in ["ω", "w′v′"] ? nothing : map(frames) do frame
         u = file["timeseries/u_dfm/$frame"][:, 1, :]
         w = file["timeseries/w_dfm/$frame"][:, 1, :]
-        imfilter(ψᶜᶜᶜ(u, w, Δx, Δzᵃᵃᶜ), gaussian((σ, 0)), "circular")[205:end-205, 33:end]
+        imfilter(ψᶜᶜᶜ(u, w, Δx, Δzᵃᵃᶜ), gaussian((σ, 0)), "circular")[128:end-128, 33:end]
     end
     
     @info "Creating buoyancy"
     bs = map(frames) do frame
-        imfilter(file["timeseries/b_dfm/$frame"][:, 1, :], gaussian((σ, 0)), "circular")[205:end-205, 33:end]
+        imfilter(file["timeseries/b_dfm/$frame"][:, 1, :], gaussian((σ, 0)), "circular")[128:end-128, 33:end]
     end
     
     @info "Creating heatmap data"
@@ -80,16 +80,16 @@ end
                 -(circshift(w, (-1, 0)) .- circshift(w, (1, 0))) / (2Δx) .+ du
             end
         end
-        imfilter(plt, gaussian((σ, 0)), "circular")[205:end-205, 33:end]
+        imfilter(plt, gaussian((σ, 0)), "circular")[128:end-128, 33:end]
     end
     close(file)
     
     figtitle = "Ro=$(round(sp.Ro; digits=1)), Ri=$(round(sp.Ri; digits=2))"
     
-    return (; figtitle, ts, xs=xᶜᵃᵃ[205:end-205], zs=zᵃᵃᶜ[33:end], plot_datas, bs, ψs)
+    return (; figtitle, ts, xs=xᶜᵃᵃ[128:end-128], zs=zᵃᵃᶜ[33:end], plot_datas, bs, ψs)
 end
 
-@inline function xz_state_video(foldername, outputfoldername; resolution=(800, 800), σ=0, field="v", Δ=false, cmax=nothing, t_max=25, axis_kwargs...)
+@inline function xz_state_video(foldername, outputfoldername; resolution=(600, 800), σ=0, field="v", Δ=false, cmax=nothing, t_max=25, axis_kwargs...)
     
     if ispath(outputfoldername)
         @info "$outputfoldername already exists!"
@@ -126,6 +126,7 @@ end
     
     ht = heatmap!(ax, xs, zs, plot_data; colormap=:balance, colorrange=(-cmax, cmax))
     ψ != nothing && contour!(ax, xs, zs, ψ; colormap=:BrBG_10, levels=ψrange, alpha=1, linewidth=1)
+    contour!(ax, xs, zs, b; color=(:black, 0.5), levels=brange, linewidth=1)
     
     Colorbar(fig[1, 2], ht, label=Δ ? L"\overline{%$field} - \overline{%$field}_0" : L"\overline{%$field}")
     
