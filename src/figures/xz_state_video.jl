@@ -89,7 +89,7 @@ end
     return (; figtitle, ts, xs=xᶜᵃᵃ[128:end-128], zs=zᵃᵃᶜ[33:end], plot_datas, bs, ψs)
 end
 
-@inline function xz_state_video(foldername, outputfoldername; resolution=(600, 800), σ=0, field="v", Δ=false, cmax=nothing, t_max=25, axis_kwargs...)
+@inline function xz_state_video(foldername, outputfoldername; resolution=(800, 600), σ=0, field="v", Δ=false, cmax=nothing, t_max=25, axis_kwargs...)
     
     if ispath(outputfoldername)
         @info "$outputfoldername already exists!"
