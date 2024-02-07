@@ -4,8 +4,8 @@ using CairoMakie
 using Statistics
 using ImageFiltering: imfilter, Kernel.gaussian
 
-@inline function average_∇b²(runname, slice; σ=0)
-    foldername = "../scratch/filament-instability/$runname"
+@inline function average_∇b²(foldername, slice; σ=0)
+    #foldername = "../scratch/filament-instability/$runname"
     filename = "down_front_mean.jld2"
     
     paramfilename = "parameters.jld2"
@@ -29,8 +29,8 @@ using ImageFiltering: imfilter, Kernel.gaussian
     return (; ts, ∇b²)
 end
 
-@inline function symmetric_u(runname, slice)
-    foldername = "../scratch/filament-instability/$runname"
+@inline function symmetric_u(foldername, slice)
+    #foldername = "../scratch/filament-instability/$runname"
     filename = "down_front_mean.jld2"
     
     paramfilename = "parameters.jld2"

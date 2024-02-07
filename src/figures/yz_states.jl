@@ -4,8 +4,8 @@ using CairoMakie
 using Statistics
 using ImageFiltering: imfilter, Kernel.gaussian
 
-@inline function yz_state_data(runname, n, slice; σ=0, field="v")
-    foldername = "../scratch/filament-instability/$runname"
+@inline function yz_state_data(foldername, n, slice; σ=0, field="v")
+    #foldername = "../scratch/filament-instability/$runname"
     filename = "down_front_mean.jld2"
     paramfilename = "parameters.jld2"
     

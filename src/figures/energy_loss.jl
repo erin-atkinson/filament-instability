@@ -5,8 +5,7 @@ using Statistics
 using ImageFiltering: imfilter, Kernel.gaussian
 
 
-@inline function energy_loss_data(runname)
-    foldername = "../scratch/filament-instability/$runname"
+@inline function energy_loss_data(foldername)
     bfilename = "buoyancy.jld2"
     vfilename = "down_front.jld2"
     filename = "down_front_mean.jld2"
@@ -90,7 +89,7 @@ end
 @inline function energy_loss(runnames; resolution=(1000, 250))
     n_plots = length(runnames)
     plot_datas = energy_loss_data.(runnames)
-    fig = Figure(; resolution)
+    fig = Figure(; resolution, backgroundcolor = (:white, 0))
     lnss = map(enumerate(plot_datas)) do (i, plot_data)
         energy_loss!(fig[1, i]; plot_data...)
     end

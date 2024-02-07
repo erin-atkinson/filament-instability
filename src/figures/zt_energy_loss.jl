@@ -5,8 +5,8 @@ using Statistics
 using ImageFiltering: imfilter, Kernel.gaussian
 
 
-@inline function zt_energy_loss_data(runname)
-    foldername = "../scratch/filament-instability/$runname"
+@inline function zt_energy_loss_data(foldername)
+    #foldername = "../scratch/filament-instability/$runname"
     bfilename = "buoyancy.jld2"
     vfilename = "down_front.jld2"
     filename = "down_front_mean.jld2"

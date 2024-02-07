@@ -19,8 +19,8 @@ using ImageFiltering: imfilter, Kernel.gaussian
 end
 
 
-@inline function neg_pv_volume(runname; σ=0)
-    foldername = "../scratch/filament-instability/$runname"
+@inline function neg_pv_volume(foldername; σ=0)
+    #foldername = "../scratch/filament-instability/$runname"
     filename = "down_front_mean.jld2"
     
     paramfilename = "parameters.jld2"
@@ -52,8 +52,8 @@ end
     return (; ts, Vq)
 end
 
-@inline function sc_by_pv_sign(runname; σ=0)
-    foldername = "../scratch/filament-instability/$runname"
+@inline function sc_by_pv_sign(foldername; σ=0)
+    #foldername = "../scratch/filament-instability/$runname"
     filename = "down_front_mean.jld2"
     
     paramfilename = "parameters.jld2"

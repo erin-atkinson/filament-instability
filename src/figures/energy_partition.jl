@@ -5,8 +5,8 @@ using Statistics
 using ImageFiltering: imfilter, Kernel.gaussian
 
 
-@inline function energy_partition_data(runname)
-    foldername = "../scratch/filament-instability/$runname"
+@inline function energy_partition_data(foldername)
+    #foldername = "../scratch/filament-instability/$runname"
     filename = "down_front_mean.jld2"
     paramfilename = "parameters.jld2"
     sp = jldopen("$foldername/$paramfilename") do file

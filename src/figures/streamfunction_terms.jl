@@ -4,8 +4,8 @@ using CairoMakie
 using Statistics
 using ImageFiltering: imfilter, Kernel.gaussian
 
-@inline function ψterms(runname; σ=0)
-    foldername = "../scratch/filament-instability/$runname"
+@inline function ψterms(foldername; σ=0)
+    #foldername = "../scratch/filament-instability/$runname"
     filename = "down_front_mean.jld2"
     vfilename = "down_front.jld2"
     ufilename = "across_front.jld2"
@@ -122,7 +122,7 @@ end
 @inline function ψterms_plot(runnames; resolution=(1000, 500),  σ=0)
     n_plots = length(runnames)
     plot_datas = ψterms.(runnames; σ)
-    fig = Figure(; resolution)
+    fig = Figure(; resolution, backgroundcolor = (:white, 0.0))
     lnss = map(enumerate(plot_datas)) do (i, plot_data)
         ψterms!(fig[1, i]; plot_data...)
     end

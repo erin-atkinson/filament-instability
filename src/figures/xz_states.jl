@@ -12,9 +12,9 @@ using ImageFiltering: imfilter, Kernel.gaussian
     return -aᶜᶜᶜ .+ bᶜᶜᶜ
 end
 
-@inline function xz_state_data(runname, n; σ=0, field="v", Δ=false)
+@inline function xz_state_data(foldername, n; σ=0, field="v", Δ=false)
     # Read data from files to be plotted
-    foldername = "../scratch/filament-instability/$runname"
+    #foldername = "../scratch/filament-instability/$runname"
     filename = "down_front_mean.jld2"
     paramfilename = "parameters.jld2"
     
@@ -109,7 +109,7 @@ end
     n_plots = length(ns)
     plot_datas = xz_state_data.(runname, ns; σ, field, Δ)
     cmax = cmax==nothing ? maximum([maximum(abs.(a.v)) for a in plot_datas]) : cmax
-    fig = Figure(; resolution)
+    fig = Figure(; resolution, backgroundcolor = (:white, 0.0))
     # Make each plot
     hts = map(enumerate(plot_datas)) do (i, plot_data)
         xz_state!(fig[1, i], cmax, limits; plot_data...)
@@ -120,7 +120,7 @@ end
     Label(fig[0, :], plot_datas[1].figtitle)
     # Clean up the figure
     n_plots > 1 && hideydecorations!.(fig.content[2:n_plots])
-    colgap!(fig.layout, 15)
+    colgap!(fig.layout, 20)
     rowgap!(fig.layout, 5)
     return fig
 end
