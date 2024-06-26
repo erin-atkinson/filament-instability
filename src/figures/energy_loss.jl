@@ -20,10 +20,10 @@ using ImageFiltering: imfilter, Kernel.gaussian
     frames = keys(file["timeseries/t"])[1:end-1]
     grid = file["serialized/grid"]
     
-    xᶜᵃᵃ = xnodes(Center, grid)
-    xᶠᵃᵃ = xnodes(Face, grid)
-    zᵃᵃᶜ = znodes(Center, grid)
-    zᵃᵃᶠ = znodes(Face, grid)
+    xᶜᵃᵃ = xnodes(grid, Center())
+    xᶠᵃᵃ = xnodes(grid, Face())
+    zᵃᵃᶜ = znodes(grid, Center())
+    zᵃᵃᶠ = znodes(grid, Face())
     Δzᵃᵃᶜ = reshape(diff(zᵃᵃᶠ), 1, length(zᵃᵃᶜ))
     Δx = xᶠᵃᵃ[2] - xᶠᵃᵃ[1]
     
@@ -43,7 +43,8 @@ using ImageFiltering: imfilter, Kernel.gaussian
     blc = zᵃᵃᶜ .> -sp.H
     # Central boundary layer cells
     cblc = -sp.H*z_omit_fraction .> zᵃᵃᶜ .> -sp.H * (1-z_omit_fraction)
-    axtitle = "Ro=$(round(sp.Ro; digits=1)), Ri=$(round(sp.Ri; digits=2))"
+    axtitle = L"Ri_{\text{min}}=%$(round(sp.Ri; digits=2))"
+    
     @inline BFLUX(frame)= -cumsum(Δzᵃᵃᶜ.*(bfile["timeseries/bwFLUX/$frame"][:, 1, 1:length(zᵃᵃᶜ)] .+ bfile["timeseries/bwFLUX/$frame"][:, 1, 2:length(zᵃᵃᶜ)+1]); dims=2)./2
     @inline LSP(frame) = cumsum(Δx.*vfile["timeseries/vuFLUX/$frame"][:, 1, :]; dims=1) .* ∂x(file["timeseries/v_dfm/$frame"][:, 1, :])
     @inline VSP(frame) = let vwFLUX = (vfile["timeseries/vwFLUX/$frame"][:, 1, 1:length(zᵃᵃᶜ)] .+ vfile["timeseries/vwFLUX/$frame"][:, 1, 2:length(zᵃᵃᶜ)+1]) / 2
@@ -71,25 +72,24 @@ end
 
 @inline function energy_loss!(layout_cell; ts, BFLUX, LSP, VSP, BFLUX_surface, LSP_surface, VSP_surface, axtitle, kwargs...)
     axis_kwargs = (;
-        xlabel="t",
+        xlabel=L"t / 2π",
         ylabel="Energy loss",
         title=axtitle,
-        limits=(0, ts[2601], -0.0015, 0.0085),
-        xlabelsize=16,
-        ylabelsize=16)
+        limits=(0, 4, -0.0015, 0.0085), # 25 / (2π)
+    )
     
     cols = [:blue, :red, :green]
     cols_boundary = [(:blue, 0.3), (:red, 0.3), (:green, 0.3)]
     
     ax = Axis(layout_cell; axis_kwargs...)
-    lns = [lines!(ax, ts, x; color=c) for (x, c) in zip((BFLUX, LSP, VSP), cols)]
-    [lines!(ax, ts, x; color=c) for (x, c) in zip((BFLUX_surface, LSP_surface, VSP_surface), cols_boundary)]
+    lns = [lines!(ax, ts ./ (2π), x; color=c) for (x, c) in zip((BFLUX, LSP, VSP), cols)]
+    #[lines!(ax, ts ./ (2π), x; color=c) for (x, c) in zip((BFLUX_surface, LSP_surface, VSP_surface), cols_boundary)]
     return lns
 end
-@inline function energy_loss(runnames; resolution=(1000, 250))
+@inline function energy_loss(runnames; size=(1000, 250))
     n_plots = length(runnames)
     plot_datas = energy_loss_data.(runnames)
-    fig = Figure(; resolution, backgroundcolor = (:white, 0))
+    fig = Figure(; size, backgroundcolor = (:white, 0), fontsize=16)
     lnss = map(enumerate(plot_datas)) do (i, plot_data)
         energy_loss!(fig[1, i]; plot_data...)
     end
@@ -100,6 +100,6 @@ end
             ax.ygridvisible = true
         end
     end
-    colgap!(fig.layout, 15)
+    #colgap!(fig.layout, 15)
     fig
 end

@@ -112,11 +112,12 @@ end
     # The steps between contours
     ψstep = 6e-4
     bstep = 1.875
-    ψ_min = minimum(minimum.(ψs))
-    ψ_max = maximum(maximum.(ψs))
+    ψ_max = ψ == nothing ? nothing : maximum([maximum(abs.(a)) for a in ψs])
+    
     b_min = minimum(minimum.(bs))
     b_max = maximum(maximum.(bs))
-    ψrange = ψ == nothing ? nothing : ψ_min:ψstep:ψ_max
+    ψrange = ψ == nothing ? nothing : (-ψ_max):ψstep:ψ_max
+    
     brange = b_min:bstep:b_max
     
     # Maximum heatmap value

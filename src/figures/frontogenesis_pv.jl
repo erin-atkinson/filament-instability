@@ -30,11 +30,11 @@ end
     
     file = jldopen("$foldername/$filename")
     
-    frames = keys(file["timeseries/t"])[101:end-1]
+    frames = keys(file["timeseries/t"])[101:2000]
     grid = file["serialized/grid"]
-    zᵃᵃᶜ = znodes(Center, grid)
-    zᵃᵃᶠ = znodes(Face, grid)
-    xᶠᵃᵃ = xnodes(Face, grid)
+    zᵃᵃᶜ = znodes(grid, Center())
+    zᵃᵃᶠ = znodes(grid, Face())
+    xᶠᵃᵃ = xnodes(grid, Face())
     
     Δx = xᶠᵃᵃ[2] - xᶠᵃᵃ[1]
     Δzᵃᵃᶜ = reshape(diff(zᵃᵃᶠ), 1, length(zᵃᵃᶜ))
@@ -65,9 +65,9 @@ end
     
     frames = keys(file["timeseries/t"])[101:end-1]
     grid = file["serialized/grid"]
-    zᵃᵃᶜ = znodes(Center, grid)
-    zᵃᵃᶠ = znodes(Face, grid)
-    xᶠᵃᵃ = xnodes(Face, grid)
+    zᵃᵃᶜ = znodes(grid, Center())
+    zᵃᵃᶠ = znodes(grid, Face())
+    xᶠᵃᵃ = xnodes(grid, Face())
     
     Δx = xᶠᵃᵃ[2] - xᶠᵃᵃ[1]
     Δzᵃᵃᶜ = reshape(diff(zᵃᵃᶠ), 1, length(zᵃᵃᶜ))
@@ -101,25 +101,25 @@ end
 
 
 @inline function plot_Vq!(layout_cell, runnames; σ=0)
-    plot_datas = map(rn->neg_pv_volume(rn; σ=0), runnames)
+    plot_datas = map(rn->neg_pv_volume(rn; σ), runnames)
     
     axis_kwargs = (;
-        xlabel="t",
+        xlabel="t / 2π",
         ylabel=L"V_{q < 0}"
     )
     
     ax = Axis(layout_cell; axis_kwargs...)
     αs = reverse(range(0.3, 1.0, length(runnames)))
     map(zip(plot_datas, αs)) do (plot_data, α)
-        lines!(ax, plot_data.ts, plot_data.Vq; color=(:red, α))
+        lines!(ax, plot_data.ts ./ (2π), plot_data.Vq; color=(:red, α))
     end
 end
 
 @inline function plot_U!(layout_cell, runnames; σ=0)
-    plot_datas = map(rn->sc_by_pv_sign(rn; σ=0), runnames)
+    plot_datas = map(rn->sc_by_pv_sign(rn; σ), runnames)
     
     axis_kwargs = (;
-        xlabel="t",
+        xlabel="t / 2π",
         ylabel=L"U_{q < 0}"
     )
     
@@ -131,11 +131,11 @@ end
     end
 end
 
-@inline function frontogenesis_pv(runnames, legendtitle, runlabels; σ=0, resolution=(1000, 500))
-    fig = Figure(; resolution)
-    plot_Vq!(fig[1, 1], runnames; σ=0)
-    lns = plot_U!(fig[1, 2], runnames)
-    Legend(fig[1, 3], lns, runlabels, legendtitle)
+@inline function frontogenesis_pv(runnames, legendtitle, runlabels; σ=0, size=(1000, 500))
+    fig = Figure(; size)
+    lns = plot_Vq!(fig[1, 1], runnames; σ)
+    #lns = plot_U!(fig[1, 2], runnames)
+    Legend(fig[1, 2], lns, runlabels, legendtitle)
     colgap!(fig.layout, 15)
     fig
 end

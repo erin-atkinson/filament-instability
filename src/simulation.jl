@@ -29,7 +29,7 @@ include("parameters.jl")
 include("filament_state.jl")
 include("sponge_layer.jl")
 include("boundary_conditions.jl")
-include("z_faces.jl")
+include("z_faces-3d.jl")
 
 include("$mode_folder/outputs.jl")
 include("$mode_folder/tracers.jl")
@@ -38,7 +38,7 @@ sp = (; simulation_parameters..., create_simulation_parameters(simulation_parame
 @info sp
 (b_filament, v_filament) = get_filament_state(sp)
 # Get a filament state without stratification
-(b_init, v_init) = get_filament_state((; sp..., Nb=sp.Nb))
+(b_init, v_init) = get_filament_state(sp)
 # To ensure that the grids are isotropic in horizontal,
 horizontal_aspect_ratio = sp.Ny / sp.Nx
 
@@ -58,7 +58,10 @@ forcing = (; get_sponge_layer_forcing(sp; σ=sp.σ, c=sp.c)..., additional_trace
 @info tracers
 
 # Turbulence closure
-closure = Oceananigans.TurbulenceClosures.SmagorinskyLilly(Pr=sp.Pr)
+νₕ = 5e-8 * 2
+νᵥ = 2e-9 * 2
+closure = Oceananigans.TurbulenceClosures.SmagorinskyLilly(; Pr=sp.Pr)
+#closure = (HorizontalScalarDiffusivity(; ν=νₕ), VerticalScalarDiffusivity(ν=νᵥ))
 
 @info "Creating model"
 model = NonhydrostaticModel(;
@@ -69,6 +72,7 @@ model = NonhydrostaticModel(;
         tracers,
         boundary_conditions,
         forcing,
+        hydrostatic_pressure_anomaly=CenterField(grid)
     )
 
 @info model
@@ -81,19 +85,17 @@ u₀(x, y, z) = 0 #1e-2*randn() * (tanh((z + sp.H) / (sp.λ * sp.H)) + 1)
 v₀(x, y, z) = v_init(100sp.L, z) #+ 1e-2*randn() * (tanh((z + sp.H) / (sp.λ * sp.H)) + 1)
 w₀(x, y, z) = 0.01*randn() * (tanh((z + sp.H) / (sp.λ * sp.H)) + 1)
 b₀(x, y, z) = b_init(100sp.L, z)
-# We input inittime but it should be around B₀^-1/3 H^2/3
-expected_init_time = sp.H^(2/3) / sp.B₀^(1/3)
-@info "Fully-deepened turbulence expected to develop at t=$(2*expected_init_time)"
+
 set!(model; u=u₀, v=v₀, w=w₀, b=b₀, additional_tracer_initial_conditions(sp, mp)...)
 
 # Create a default output that saves the average state of the simulation u, v, w, b fields
 @info "Creating simulation"
-simulation = Simulation(model, Δt=1/sp.Np, stop_time=init_time)
+simulation = Simulation(model, Δt=1/(sp.f*sp.Np), stop_time=init_time)
 
 # Progress and timestepper wizards
 progress(sim) = @info string("Iteration: ", iteration(sim), ", time: ", time(sim), ", step: ", sim.Δt)
-wizard = TimeStepWizard(cfl=0.5, diffusive_cfl=0.5, min_Δt = 0.1/sp.Np, max_Δt = 10/sp.Np)
-simulation.callbacks[:progress] = Callback(progress, TimeInterval(10/(sp.f*write_freq)))
+wizard = TimeStepWizard(cfl=0.2, diffusive_cfl=0.2)
+simulation.callbacks[:progress] = Callback(progress, TimeInterval(1/(sp.f*write_freq)))
 simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
 (u, v, w) = model.velocities
@@ -115,17 +117,21 @@ end
 @info "Creating output writers at $output_folder"
 
 # Mean fields
-u_dfm = Field(Average(u; dims=2))
-v_dfm = Field(Average(v; dims=2))
-w_dfm = Field(Average(w; dims=2))
-b_dfm = Field(Average(b; dims=2))
+#u_dfm = Field(Average(u; dims=2))
+#v_dfm = Field(Average(v; dims=2))
+#w_dfm = Field(Average(w; dims=2))
+#b_dfm = Field(Average(b; dims=2))
 
-simulation.output_writers[:mean_state] = JLD2OutputWriter(
+φ = model.pressures.pHY′ + model.pressures.pNHS
+ν = model.diffusivity_fields.νₑ
+
+simulation.output_writers[:output] = JLD2OutputWriter(
     model,
-    (; u_dfm, v_dfm, w_dfm, b_dfm),
-    filename = "$output_folder/down_front_mean.jld2",
+    (; u, v, w, b, φ, ν),
+    filename = "$output_folder/output.jld2",
     schedule = TimeInterval(1/(sp.f*write_freq)),
-    overwrite_existing = true
+    overwrite_existing = true,
+    with_halos=true
 )
 
 # Save parameters to a file
@@ -139,8 +145,8 @@ end
 @additional_outputs! simulation
 
 # Checkpointer
-mkdir("$output_folder/checkpoints")
-simulation.output_writers[:checkpointer] = Checkpointer(model; schedule=TimeInterval(10/sp.f), prefix="checkpoint", dir="$output_folder/checkpoints", verbose=true)
+#mkdir("$output_folder/checkpoints")
+#simulation.output_writers[:checkpointer] = Checkpointer(model; schedule=TimeInterval(10/sp.f), prefix="checkpoint", dir="$output_folder/checkpoints", verbose=true)
 
 # Run simulation until turbulence reaches depth
 

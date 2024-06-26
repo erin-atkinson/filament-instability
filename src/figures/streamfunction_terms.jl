@@ -13,12 +13,12 @@ using ImageFiltering: imfilter, Kernel.gaussian
     bfilename = "buoyancy.jld2"
     paramfilename = "parameters.jld2"
     frames, grid = jldopen("$foldername/$filename") do file
-        keys(file["timeseries/t"])[101:2601], file["serialized/grid"]
+        keys(file["timeseries/t"])[101:2699], file["serialized/grid"]
         end;
-    xᶜᵃᵃ = xnodes(Center, grid)
-    xᶠᵃᵃ = xnodes(Face, grid)
-    zᵃᵃᶜ = znodes(Center, grid)
-    zᵃᵃᶠ = znodes(Face, grid)
+    xᶜᵃᵃ = xnodes(grid, Center())
+    xᶠᵃᵃ = xnodes(grid, Face())
+    zᵃᵃᶜ = znodes(grid, Center())
+    zᵃᵃᶠ = znodes(grid, Face())
     Δzᵃᵃᶜ = reshape(diff(zᵃᵃᶠ), 1, length(zᵃᵃᶜ))
     Δx = xᶠᵃᵃ[2] - xᶠᵃᵃ[1]
     function ψᶜᶜᶜ(uᶠᶜᶜ, wᶜᶜᶠ, xᶜᵃᵃ, xᶠᵃᵃ, zᵃᵃᶜ, zᵃᵃᶠ)
@@ -49,7 +49,7 @@ using ImageFiltering: imfilter, Kernel.gaussian
     # Central boundary layer cells
     cblc = -sp.H*z_omit_fraction .> zᵃᵃᶜ .> -sp.H * (1-z_omit_fraction)
     
-    axtitle = "Ro=$(round(sp.Ro; digits=1)), Ri=$(round(sp.Ri; digits=2))"
+    axtitle = L"Ri_{\text{min}}=%$(round(sp.Ri; digits=2))"
     file = jldopen("$foldername/$filename")
     ufile = jldopen("$foldername/$ufilename")
     vfile = jldopen("$foldername/$vfilename")
@@ -106,23 +106,23 @@ end
 
 @inline function ψterms!(layout_cell; ts, ∂²C∂t², linear_terms, nonlinear_terms, axtitle)
     axis_kwargs = (;
-        xlabel = "t",
-        ylabel = L"\frac{\text{d}^2C}{\text{d}t^2}",
+        xlabel = L"t / 2π",
+        ylabel = L"\frac{\text{d}^2C_\text{IML}}{\text{d}t^2}",
         title = axtitle,
-        limits = (0, ts[end], -1, 1)
+        limits = (0, 4, -1, 1)
     )
     ax = Axis(layout_cell; axis_kwargs...)
-    ln1 = lines!(ax, ts, ∂²C∂t²; color=:black)
-    ln2 = lines!(ax, ts, linear_terms)
-    ln3 = lines!(ax, ts, nonlinear_terms)
-    ln4 = lines!(ax, ts, linear_terms .+ nonlinear_terms)
+    ln1 = lines!(ax, ts ./ (2π), ∂²C∂t²; color=:black)
+    ln2 = lines!(ax, ts ./ (2π), linear_terms)
+    ln3 = lines!(ax, ts ./ (2π), nonlinear_terms)
+    ln4 = lines!(ax, ts ./ (2π), linear_terms .+ nonlinear_terms)
     return [ln1, ln2, ln3, ln4]
 end
 
-@inline function ψterms_plot(runnames; resolution=(1000, 500),  σ=0)
+@inline function ψterms_plot(runnames; size=(1000, 500),  σ=0)
     n_plots = length(runnames)
     plot_datas = ψterms.(runnames; σ)
-    fig = Figure(; resolution, backgroundcolor = (:white, 0.0))
+    fig = Figure(; size, backgroundcolor = (:white, 0.0), fontsize=16)
     lnss = map(enumerate(plot_datas)) do (i, plot_data)
         ψterms!(fig[1, i]; plot_data...)
     end
@@ -133,6 +133,6 @@ end
             ax.ygridvisible = true
         end
     end
-    colgap!(fig.layout, 15)
+    #colgap!(fig.layout, 15)
     fig
 end
