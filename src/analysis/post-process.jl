@@ -3,7 +3,8 @@ using JLD2
 
 foldername = ARGS[1]
 scriptname = ARGS[2]
-
+# Might use a lot of IO
+buffer = length(ARGS) > 2 ? ARGS[3] : nothing
 # Function to update input fields
 function update_inputs!(input_fields, frame, path)
     jldopen(path) do file
@@ -16,6 +17,9 @@ function update_inputs!(input_fields, frame, path)
     end
     return nothing
 end
+
+macro postpostprocess() end
+temp_outputs = (; )
 
 function write_grid_times(grid, frames, ts, path)
     jldopen(path, "a") do file
@@ -74,13 +78,16 @@ sp, init_time, run_time = jldopen("$foldername/parameters.jld2") do file
     file["parameters/simulation"], file["parameters/init_time"], file["parameters/run_time"]
 end
 
-# Include script file which should define a named tuple of outputs
+# Include script file which should define a named tuple of outputs, temp_outputs (which are deleted after)
 # and a function called update_outputs!
 @info "Including $scriptname.jl"
 include("$scriptname.jl")
 
 @info outputs
-filename = "$foldername/$scriptname.jld2"
+
+filename = buffer == nothing ? "$foldername/$scriptname.jld2" : "$buffer/$scriptname.jld2"
+temp_filename = buffer == nothing ? "$foldername/temp_$scriptname.jld2" : "$buffer/temp_$scriptname.jld2"
+
 for (i, iter) in enumerate(iters)
     print("Computing $iter\r")
     u .= u_series[i]
@@ -94,7 +101,17 @@ for (i, iter) in enumerate(iters)
     ν .= ν_series[i]
     update_outputs!(outputs)
     write_outputs(filename, outputs, iter)
+    write_outputs(temp_filename, temp_outputs, iter)
 end
 println()
-@info "Finished!"
 write_grid_times(grid, iters, ts, filename)
+
+@postpostprocess
+rm(temp_filename)
+
+if buffer != nothing
+    @info "Moving from $buffer to $foldername"
+    mv(filename, "$foldername/$scriptname.jld2"; force=true)
+end
+
+@info "Finished!"

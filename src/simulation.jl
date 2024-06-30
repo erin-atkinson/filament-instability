@@ -94,7 +94,7 @@ simulation = Simulation(model, Δt=1/(sp.f*sp.Np), stop_time=init_time)
 
 # Progress and timestepper wizards
 progress(sim) = @info string("Iteration: ", iteration(sim), ", time: ", time(sim), ", step: ", sim.Δt)
-wizard = TimeStepWizard(cfl=0.2, diffusive_cfl=0.2)
+wizard = TimeStepWizard(cfl=0.15, diffusive_cfl=0.15)
 simulation.callbacks[:progress] = Callback(progress, TimeInterval(1/(sp.f*write_freq)))
 simulation.callbacks[:wizard] = Callback(wizard, IterationInterval(10))
 
