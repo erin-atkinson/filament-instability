@@ -111,7 +111,7 @@ end
     
     return @inbounds -a1[i, j, k] - a2[i, j, k] + a3[i, j, k] + a4[i, j, k]
 end
-# I seperate the w'v' "VSP" term for illustrative reasons
+# I seperate the w'v' "VSP" and w'b' "BFLUX" terms for illustrative reasons
 @inline function F_VSP_func(i, j, k, grid, w′v′)
     
     a = ∂zᶜᶜᶜ(i, j, k, grid, ∂zᶜᶜᶠ, w′v′)
@@ -127,6 +127,7 @@ end
 end
 # Sub-grid-scale viscosity
 # This doesn't work and I don't know why
+# not really up to fixing, it doesn't contribute much anyway
 @inline function F_sgs_func(i, j, k, grid, ν, v, b)
     
     ∂xv = ℑxyᶜᶜᵃ(i, j, k, grid, ∂xᶠᶠᶜ, v)
