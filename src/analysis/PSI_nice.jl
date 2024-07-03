@@ -67,7 +67,7 @@ macro postpostprocess()
             p_iter = iters[max(1, i-1)]
             iter = iters[i]
             n_iter = iters[min(length(iters), i+1)]
-            ∇²ψ_tt = (2 / Δt^2) * (∇²ψ(iter) - (∇²ψ(n_iter) + ∇²ψ(p_iter)) / 2)
+            ∇²ψ_tt = -(2 / Δt^2) * (∇²ψ(iter) - (∇²ψ(n_iter) + ∇²ψ(p_iter)) / 2)
             jldopen(filename, "a") do file
                 file["timeseries/∇²ψ_tt/$iter"] = ∇²ψ_tt
             end

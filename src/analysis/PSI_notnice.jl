@@ -169,7 +169,7 @@ t_F_nl = Field(KernelFunctionOperation{Center, Nothing, Center}(t_F_nl_func, gri
 #F_sgs = dfm(KernelFunctionOperation{Center, Center, Center}(F_sgs_func, grid, ν, v, b))
 #t_F_sgs = dfm(KernelFunctionOperation{Center, Center, Center}(t_F_sgs_func, grid, ν, u, w))
 
-F_other = Field(KernelFunctionOperation{Center, Nothing, Center}(F_other_func, grid, u′v′, u′b′, w′b′))
+F_other = Field(KernelFunctionOperation{Center, Nothing, Center}(F_other_func, grid, u′v′, u′b′))
 t_F_other = Field(KernelFunctionOperation{Center, Nothing, Center}(t_F_other_func, grid, w′u′, u′u′, w′w′))
 
 F_VSP = Field(KernelFunctionOperation{Center, Nothing, Center}(F_VSP_func, grid, w′v′))
