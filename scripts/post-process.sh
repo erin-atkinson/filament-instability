@@ -1,7 +1,7 @@
 #!/bin/bash
 #SBATCH --nodes=1
 #SBATCH --ntasks-per-node=40
-#SBATCH --time=3:30:00
+#SBATCH --time=3:00:00
 #SBATCH --job-name=filament-instability-post-process
 #SBATCH --output=../../scratch/logs/filament-instability.post-process.txt
 
@@ -15,16 +15,10 @@ export RAM=/dev/shm/filament-instability-pp
 cd ~/Old/filament-instability
 
 # Location of output.jld2
-export SIM_OUTPUT_FOLDER=../../scratch/filament-instability/Ri000
+export SIM_OUTPUT_FOLDER=../../scratch/filament-instability/Ri050
 
+julia -t 40 -- src/analysis/post-process.jl $SIM_OUTPUT_FOLDER DFM $RAM
+julia -t 40 -- src/analysis/post-process.jl $SIM_OUTPUT_FOLDER PV $RAM
+julia -t 40 -- src/analysis/post-process.jl $SIM_OUTPUT_FOLDER TKE $RAM
+julia -t 40 -- src/analysis/post-process.jl $SIM_OUTPUT_FOLDER PSI_nice $RAM
 julia -t 40 -- src/analysis/post-process.jl $SIM_OUTPUT_FOLDER PSI_notnice $RAM
-julia -t 40 -- src/analysis/post-process.jl $SIM_OUTPUT_FOLDER PSI_nice $RAM
-
-export SIM_OUTPUT_FOLDER=../../scratch/filament-instability/Ri010
-
-julia -t 40 -- src/analysis/post-process.jl $SIM_OUTPUT_FOLDER PSI_notnice $RAM
-julia -t 40 -- src/analysis/post-process.jl $SIM_OUTPUT_FOLDER PSI_nice $RAM
-
-export SIM_OUTPUT_FOLDER=../../scratch/filament-instability/Ri020
-
-julia -t 40 -- src/analysis/post-process.jl $SIM_OUTPUT_FOLDER PSI_nice $RAM
