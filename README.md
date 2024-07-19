@@ -16,7 +16,7 @@ $$\gamma(s; \alpha, \delta) = -1 + \frac{\delta}{2} \left(\text{erf}\left(s + \f
 
 The simulation initially develops some boundary layer turbulence. The fluctuation fields $\vec {u}'$ and $b'$ are then added to the nominal filament state.
 
-
+a
 
 ## Running
 Computations were performed on the Mist supercomputer at the SciNet HPC Consortium (Loken et al. 2010; Ponce et al. 2019).
